@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+
+  worker:
+    build: ./worker
+    environment:
+      - BEGIN_YEAR={BEGIN_YEAR}
+      - END_YEAR={END_YEAR}
+      - API_KEY={API_KEY}
+      - WORKER_ID={WORKER_ID}
+      - CALL_LIMIT={CALL_LIMIT}
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+
+  # Other services defined here
+  #mongo:
+  #  image: mongo
+  #  volumes:
+  #    - ./data:/data  # Mount shared volume for MongoDB to access data
+  #  environment:
+  #    - MONGODB_URI=mongodb://mongo:27017/mydatabase  # MongoDB connection URI
+
+  #neo4j:
+  #  image: neo4j
+  #  volumes:
+  #    - ./data:/data  # Mount shared volume for Neo4j to access data
+  #  ports:
+  #    - "7474:7474"  # Neo4j browser port
+  #    - "7687:7687"  # Neo4j bolt port
+  #  environment:
+  #    - NEO4J_AUTH=neo4j/password  # Neo4j authentication
+

@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  configuration:
+    build:
+      context: .
+    container_name: docker_configuration
+    volumes:
+      - ${PWD_PARENT}:/app/project
