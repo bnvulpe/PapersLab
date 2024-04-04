@@ -44,7 +44,7 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
 
     # Find the start and end indices of the worker block
     start_index = template_content.index('  worker:\n')
-    end_index = template_content.index('  # Other services defined here\n')
+    end_index = template_content.index('  # wiki\n')
 
     for i, key in enumerate(api_keys, start=1):
         
@@ -55,10 +55,9 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
 
         new_worker = template_content[start_index:end_index].copy()  # Copy the worker lines
 
-        print(new_worker)
-
         # Modify relevant lines
-        new_worker[0] = f'  worker_{i}:\n'
+        new_worker.insert(0,f'  # worker_{i}\n')
+        new_worker[1] = f'  worker_{i}:\n'
         for j, line in enumerate(new_worker):
             if "- BEGIN_YEAR=" in line:
                 new_worker[j] = line.replace("{BEGIN_YEAR}", str(worker_begin_year))
@@ -71,18 +70,34 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
             elif "- CALL_LIMIT=" in line:   
                 new_worker[j] = line.replace("{CALL_LIMIT}", str(limit))
                 
-        #new_worker = [line for line in new_worker if "- WORKER_ID={WORKER_ID}" not in line and "- END_YEAR={END_YEAR}" not in line] # Avoid duplication
         new_worker.append('\n')
-        print('\n')
-        print(new_worker)
         worker_service = ''.join(new_worker)
         
         template_content.extend(worker_service)
 
     del template_content[start_index:end_index]# Delete the worker template
-    # Save the output file with the replaced variables in the specified folder
 
-    print(template_content)
+    # Find the start and end indices of the wiki block
+    start_index = template_content.index('  wiki:\n')
+    end_index = template_content.index('  # databases\n')
+
+    new_wiki = template_content[start_index:end_index].copy()  # Copy the wiki lines
+
+    # Modify relevant lines
+    new_wiki.insert(0,'  # wiki\n')
+    for j, line in enumerate(new_wiki):
+        if "depends_on:" in line:
+            for i in range(1, num_workers + 1):
+                new_wiki.insert(j + i, f"      - worker_{i}\n")
+
+    new_wiki.append('\n')
+
+    wiki_service = ''.join(new_wiki)
+    template_content.extend(wiki_service)
+
+    del template_content[start_index-2:end_index]# Delete the wiki template
+
+    # Save the output file with the replaced variables in the specified folder
     with open(os.path.join(output_folder, output_file), 'w') as output:
         output.writelines(template_content)
 

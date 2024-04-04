@@ -15,7 +15,18 @@ services:
         source: ./data
         target: /data
 
-  # Other services defined here
+  # wiki
+
+  wiki:
+    build:  ./wiki
+    depends_on:
+      
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+
+  # databases
   #mongo:
   #  image: mongo
   #  volumes:
