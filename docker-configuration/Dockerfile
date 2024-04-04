@@ -4,11 +4,8 @@ WORKDIR /app/configuration
 
 COPY . .
 
-# Run the Python script and redirect output to a log file
-RUN python docker_compose_configuration.py > output.log
-
-# If you want to see the contents of the log file, you can add a CMD or ENTRYPOINT command to display it
-CMD ["cat", "output.log"]
+# Run the Python script
+RUN python docker_compose_configuration.py
 
 # CMD ["python", "docker_compose_configuration.py"]
-#CMD ["echo", "docker-compose configuration completed"]
+CMD ["echo", "docker-compose configuration completed"]

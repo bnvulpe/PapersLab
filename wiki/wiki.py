@@ -7,6 +7,15 @@ from concurrent.futures import ThreadPoolExecutor
 from requests.adapters import HTTPAdapter
 
 def clean_publisher(publisher):
+    '''
+    Function to clean the publisher name
+    
+    Parameters:
+    publisher (str): the name of the publisher
+    
+    Returns:
+    cleaned_publisher (str): the cleaned name of the publisher
+    '''
     # Remove "Published by:" text
     publisher = publisher.replace("Published by:", "")
     # Remove content within parentheses or square brackets
@@ -28,7 +37,16 @@ def clean_publisher(publisher):
     return publisher.strip()
 
 def get_publishers_from_directory(directory):
-    all_publishers = set()
+    '''
+    Function to get all publishers from a directory of JSON files
+
+    Parameters:
+    directory (str): the directory containing the JSON files
+    
+    Returns:
+    all_publishers (set): a set of all publishers
+    '''
+    all_publishers = set() # we use a set to avoid duplicates
     for filename in os.listdir(directory):
         if filename.endswith(".json"):
             file_path = os.path.join(directory, filename)
@@ -37,6 +55,15 @@ def get_publishers_from_directory(directory):
     return all_publishers
 
 def get_publishers(json_file):
+    '''
+    Function to get all 'clean' publishers from a JSON file
+    
+    Parameters:
+    json_file (str): the path to the JSON file
+    
+    Returns:
+    publishers (set): a set of all publishers
+    '''
     with open(json_file, 'r') as f:
         data = json.load(f)
     publishers = set()
@@ -47,8 +74,18 @@ def get_publishers(json_file):
             publishers.add(cleaned_publisher)
     return publishers
 
-
 def get_publisher_description(publisher_name, session):
+    '''
+    Function to get the description of a publisher from Wikidata
+    
+    Parameters:
+    publisher_name (str): the name of the publisher
+    session (requests.Session): a session object to make HTTP requests
+
+    Returns:
+    description (str): the description of the publisher
+
+    '''
     url = "https://www.wikidata.org/w/api.php"
     params = {
         "action": "wbsearchentities",
@@ -73,6 +110,14 @@ def get_publisher_description(publisher_name, session):
         return 'No description'
 
 def save_publisher_descriptions(publishers, output_csv):
+    '''
+    Function to save the descriptions of all the publishers to a CSV file
+
+    Parameters:
+    publishers (list): a list of all publishers
+    output_csv (str): the path to the output CSV file
+
+    '''
     with requests.Session() as session:
         session.mount('https://', HTTPAdapter(max_retries=3))  # Retry 3 times in case of connection errors
 
@@ -83,8 +128,6 @@ def save_publisher_descriptions(publishers, output_csv):
         writer = csv.writer(csvfile, delimiter=';')
         writer.writerow(['publisher', 'description'])
         writer.writerows(descriptions)
-
-
 
 if __name__ == "__main__":
     publishers = get_publishers_from_directory("/data")

@@ -1,18 +1,27 @@
 import requests
 import json
 import os
-from pymongo import MongoClient
 import time
     
 api_endpoint = "https://api.core.ac.uk/v3/"
 
-# in case we have a mongodb database
-#MONGO_DB_URL = "mongodb://mongo:27017/"
-#MONGO_DB_NAME = "papers_db"
-#MONGO_COLLECTION_NAME = "papers"
-
-
 def query_api(url_fragment, query, api_key, is_scroll=False, limit=100, scrollId=None):
+    ''' 
+    Function to query the API and return the results
+
+    Parameters:
+    url_fragment (str): the url fragment to be appended to the base url
+    query (str): the query to be passed to the API
+    api_key (str): the API key to be used for authentication
+    is_scroll (bool): whether the query is a scroll query or not
+    limit (int): the number of results to be returned
+    scrollId (str): the scrollId to be used for the next scroll query
+
+    Returns:
+    response.json() (dict): the response from the API in JSON format
+    response.elapsed.total_seconds() (float): the time taken for the request to complete
+
+    '''
     headers={"Authorization":"Bearer "+api_key}
     query = {"q":query, "limit":limit}
     if not is_scroll:
@@ -32,6 +41,18 @@ def query_api(url_fragment, query, api_key, is_scroll=False, limit=100, scrollId
         print(f"Error code {response.status_code}, {response.content}")
 
 def scroll(search_url, query, extract_info_callback=None):
+    '''
+    Function to scroll through the results of a query
+    
+    Parameters:
+    search_url (str): the url fragment to be appended to the base url
+    query (str): the query to be passed to the API
+    extract_info_callback (function): a callback function to extract information from the results
+    
+    Returns:
+    allresults (list): a list of all the results from the query
+    '''
+
     allresults = []
     count = 0
     scrollId=None
@@ -51,68 +72,46 @@ def scroll(search_url, query, extract_info_callback=None):
         print(f"{count}/{totalhits} {elapsed}s")
     return allresults
 
-# in case we have a mongodb database
-#def save_to_mongodb(data):
-    #client = MongoClient(MONGO_DB_URL)
-    #db = client[MONGO_DB_NAME]
-    #collection = db[MONGO_COLLECTION_NAME]
-    #collection.insert_many(data)
-
 def save_json(json_object, filename): 
+    '''
+    Function to save a JSON object to a file. Used for saving the results of the API query. 
+    Since we are calling the API multiple times (CALL_LIMIT), we save the results to a new file for each page of results.
+
+    Parameters:
+    json_object (dict): the JSON object to be saved
+    filename (str): the name of the file to save the JSON object to
+
+    '''
     with open(filename, 'w') as f:
         f.write(json.dumps(json_object, indent=2))
 
-
 def main():
+    '''
+    Main function to extract papers from the API.
+    
+    The function extracts papers from the API based on the year range and call_limit provided in the environment variables and saves the results to a file in the /data directory.
+    
+    '''
 
-    # container_name = os.getenv('HOSTNAME')
-    # print(f"Container name: {container_name}")
-    # try:
-    #     print(container_name)
-    # except ValueError:
-    #     print("There's no container")
-
-    # # Extract container index from name
-    # try:
-    #     worker_id = int(container_name.split('_')[-1])
-    #     print(worker_id)
-    # except ValueError:
-    #     print("Index of container couldn't be extracted.")
-    #     worker_id = 0 
-
-    # worker_id = int(os.getenv('WORKER_ID')) # in case we use docker swarm 
-
-    # Read API keys from env_vars.txt file
-    # print(f'Worker id: {worker_id}')
-    # print(f"Api Keys file: {os.getenv('API_KEY_FILE')}")
-    # with open(os.getenv('API_KEY_FILE')) as f:
-    #     api_keys = f.readlines()
-
-    # for i, api_key in enumerate(api_keys):
-        # Define environment variables for API key
-        # env_vars = {
-        #     'API_KEY': api_key.strip(),
-        #     'WORKER_ID': str(i + 1)
-        # }
-
+    worker_id = int(os.getenv('WORKER_ID')) # in case there's an intended use of docker swarm or any other orchestration tool, used for identificaction
     key = str(os.getenv('API_KEY'))
     begin_year = int(os.getenv('BEGIN_YEAR', '2015'))
     end_year = int(os.getenv('END_YEAR', '2015'))
 
-    print(f'My API key: ', key)
+    print(f'Hi! My ID is: ', worker_id, '\n')
     
-    print(f"Extracting papers from the year {begin_year} until {end_year}...")
+    print(f"I'm extracting papers from the year {begin_year} until {end_year}...\n")
 
     print("\nQuerying the API...")
 
     ''' 
-    There are 60 seconds in a minute, so if you can make 10 requests per minute, you should wait 6 seconds between each request. 
-    This would result in approximately 10 requests per minute, keeping you within your rate limit.
+    There's an API rate limit of 10 request/minute. Since there are 60 seconds in a minute, this script should wait 6 seconds between each request. 
+    This would result in approximately 10 requests per minute, keeping the script within the rate limit.
     '''
 
     scroll_id = None
     limit = int(os.getenv('CALL_LIMIT', '5'))
-    for i in range(limit): # change the amount of calls to the API 
+    for i in range(limit): # amount of calls to the API per worker mentioned in the environment variable CALL_LIMIT
         while True:
             try:
                 query = f"yearPublished>={begin_year} AND yearPublished<={end_year}"
@@ -122,14 +121,13 @@ def main():
                 
                 file_path = f'/data/{key[:4]}_papers_{i}.json'
                 save_json(results['results'], file_path) # save results to a new file for each page
-                # save_to_mongodb(results['results'])
 
                 break  # if the request was successful, break the loop and proceed to the next iteration
             except Exception as e:
                 print(f"Error: {e}. Retrying in 10 seconds...")
                 time.sleep(10)  # if an error occurred, wait for 10 seconds before retrying
-        time.sleep(6)  # pause for 6 seconds before the next request
 
+        time.sleep(6)  # pause for 6 seconds before the next request
 
 if __name__ == "__main__":
     main()

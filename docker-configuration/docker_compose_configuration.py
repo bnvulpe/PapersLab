@@ -2,7 +2,7 @@ import os
 
 """
 This is a script that takes a template of a docker compose and configures it with the environment variables
-dynamically. We assign each API key to a different worker.
+dynamically.
 """
 def load_env_file(file_path):
     """
@@ -20,9 +20,16 @@ def load_env_file(file_path):
                 # Set the environment variable
                 os.environ[key] = value
 
-
-
 def configure_docker_compose(template_file, output_file, api_keys_file, output_folder):
+    """
+    Configure a docker-compose file with the environment variables.
+
+    Args:
+        template_file (str): Path to the docker-compose template file.
+        output_file (str): Name of the output file.
+        api_keys_file (str): Path to the file containing the API keys.
+        output_folder (str): Path to the output folder.
+    """
     load_env_file('.env')
 
     # Read the template file and the API keys file
@@ -42,13 +49,13 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
     # Calculate the time range for each worker
     time_range = (original_end_year - begin_year) / num_workers
 
+    # ------------------------------ WORKERS ------------------------------
     # Find the start and end indices of the worker block
     start_index = template_content.index('  worker:\n')
     end_index = template_content.index('  # wiki\n')
 
     for i, key in enumerate(api_keys, start=1):
         
-
         # Calculate the time range for the current worker
         worker_begin_year = round(float(begin_year + (i - 1) * time_range))
         worker_end_year = round(float(begin_year + i * time_range))
@@ -59,6 +66,8 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
         new_worker.insert(0,f'  # worker_{i}\n')
         new_worker[1] = f'  worker_{i}:\n'
         for j, line in enumerate(new_worker):
+            if "container_name:" in line:
+                new_worker[j] = line.replace("{worker}", f' worker_{i}')
             if "- BEGIN_YEAR=" in line:
                 new_worker[j] = line.replace("{BEGIN_YEAR}", str(worker_begin_year))
             elif "- END_YEAR=" in line:
@@ -75,8 +84,9 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
         
         template_content.extend(worker_service)
 
-    del template_content[start_index:end_index]# Delete the worker template
+    del template_content[start_index:end_index] # Delete the worker template
 
+    # ------------------------------ WIKI ------------------------------
     # Find the start and end indices of the wiki block
     start_index = template_content.index('  wiki:\n')
     end_index = template_content.index('  # databases\n')
@@ -95,7 +105,7 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
     wiki_service = ''.join(new_wiki)
     template_content.extend(wiki_service)
 
-    del template_content[start_index-2:end_index]# Delete the wiki template
+    del template_content[start_index-2:end_index] # Delete the wiki template
 
     # Save the output file with the replaced variables in the specified folder
     with open(os.path.join(output_folder, output_file), 'w') as output:
