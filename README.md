@@ -182,7 +182,7 @@ Para POWERSHELL de Windows:
 
 3. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
-	example: docker cp 37f7a096ea63:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+	example: docker cp 68fb1f5790f5:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
 4. cd ..
 
@@ -200,7 +200,7 @@ Para Linux/MacOS:
 
 4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
-	example: docker cp 37f7a096ea63:/app/docker-compose.yml $(dirname "$(pwd)")
+	example: docker cp 19f492ffc52f:/app/docker-compose.yml $(dirname "$(pwd)")
 
 5. cd ..
 
