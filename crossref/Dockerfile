@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY wait-for-it.sh wait-for-it.sh 
 RUN chmod +x wait-for-it.sh
 
-CMD ["python", "wiki.py"]
+CMD ["python", "crossref.py"]

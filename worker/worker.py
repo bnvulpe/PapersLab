@@ -2,6 +2,7 @@ import requests
 import json
 import os
 import time
+import socket
     
 api_endpoint = "https://api.core.ac.uk/v3/"
 
@@ -129,5 +130,32 @@ def main():
 
         time.sleep(6)  # pause for 6 seconds before the next request
 
+
+def send_message_to_coordinator(message):
+    host = 'coordinator'  # Number of the container of the coordinator 
+    port = 12345  # Port of the coordinator
+
+    # Create socket TCP/IP
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        # Conect to the coordinator server
+        client_socket.connect((host, port))
+
+        # Send message
+        client_socket.sendall(message.encode())
+
+        print(f"Message sent to coordinator: {message}")
+
+    except Exception as e:
+        print(f"Error has occurred while sending message: {e}")
+    finally:
+        # Close socket
+        client_socket.close()
+
 if __name__ == "__main__":
     main()
+    time.sleep(10)
+    worker_id = int(os.getenv('WORKER_ID'))
+    message = f"Finished extraction from worker with id {worker_id}"
+    send_message_to_coordinator(message)

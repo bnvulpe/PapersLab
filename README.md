@@ -36,14 +36,18 @@ En esta sección, se identifican y describen los componentes clave de la infraes
 
 ### Microservicios de Extracción de Datos
 
-La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples API keys. Consiste en cuatro workers, uno para cada API key asociada a los miembros del grupo. Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento (en diferentes sistemas de bases de datos, Neo4j y MongoDB), tratamiento y manipulación en las siguientes etapas del proyecto.
+La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples API keys. Consiste en cuatro workers, uno para cada API key asociada a los miembros del grupo. Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
+
+- **Neo4j**: se trata de una base de datos de grafos que es ideal para modelar y representar relaciones complejas entre entidades, como los autores de los papers, las citas entre papers y las conexiones entre conceptos científicos. Al aprovechar la capacidad de Neo4j para almacenar datos en forma de grafos, pueden modelar fácilmente las relaciones entre los distintos atributos. Esto permite consultas eficientes para descubrir patrones y relaciones entre los datos.
+
+- **Elasticsearch**: motor de búsqueda que puede ser utilizado para indexar y buscar los contenidos de los papers científicos, así como también para almacenar y consultar la información obtenida de la API de Wiki. Elasticsearch ofrece capacidades avanzadas de búsqueda de texto completo, agregaciones, análisis de datos y visualización, lo que facilita la extracción de información significativa de grandes conjuntos de datos no estructurados. Además, Elasticsearch es altamente escalable y tolerante a fallos, lo que lo hace adecuado para manejar grandes volúmenes de datos y cargas de trabajo distribuidas.
 
 #### Estructura de Carpetas:
 
 - **Carpeta docker-configuration:**
   - *docker-compose.yml.template*: Template del Docker Compose utilizado para generar el archivo de configuración.
   - *docker_compose_configuration.py*: Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes.
-  - *Dockerfile*: Archivo para construir la imagen de Docker necesaria para ejecutar docker_compose_configuration.py.
+  - *Dockerfile*: Archivo para construir la imagen de Docker necesaria para ejecutar *docker_compose_configuration.py*.
   - *docker-compose.yml*: Docker Compose utilizado para montar la imagen anterior y crear el volumen donde se guardarán los datos.
   - *.env*: Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT.
   - *env_vars.txt*: Archivo de texto donde se encuentran las 4 API keys (una en cada línea).
@@ -51,21 +55,27 @@ La infraestructura se basa en microservicios diseñados para la extracción efic
 - **Carpeta worker:**
   - *worker.py*: Script encargado de la extracción de datos desde la API.
   - *requirements.txt*: Archivo que especifica las librerías necesarias para ejecutar el script.
-  - *Dockerfile*: Dockerfile que construye la imagen responsable de ejecutar worker.py e instala las librerías especificadas en requirements.txt.
+  - *Dockerfile*: Dockerfile que construye la imagen responsable de ejecutar *worker.py* e instala las librerías especificadas en requirements.txt.
+
+- **Carpeta wiki**
+  - *wiki.py*: Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida. 
+  - *check_health.sh*: Archivo shell que comprueba que los workers han terminado antes de iniciar el servicio wiki.
+  - *entrypoint.sh*: Archivo que ejecuta el fichero *check_health.sh* y, a continuación, *wiki.py*.
+  - *Dockerfile*: Dockerfile que construye la imagen que ejecuta *entrypoint.sh* e instala las librerías necesarias especificadas en el fichero requirements.txt.
 
 ### Explicación de Componentes
 
 - **Servicio de Extracción de Datos (Worker):** Este microservicio se encarga de la extracción de datos desde una API dada utilizando un conjunto de API keys. Su función principal es recolectar los datos necesarios de manera eficiente y confiable. 
   - *Contribución al manejo eficiente de datos:* El uso de varios workers distribuye la carga de trabajo y acelera el proceso de extracción de datos al paralelizar las solicitudes a la API. Esto optimiza el rendimiento y garantiza una extracción rápida y efectiva de grandes volúmenes de datos.
-  - *Integración con otros componentes:* Los datos extraídos por cada worker se almacenan en un volumen Docker compartido, lo que permite un acceso uniforme a los datos desde otros componentes del sistema, como las bases de datos MongoDB y Neo4j.
+  - *Integración con otros componentes:* Los datos extraídos por cada worker se almacenan en un volumen Docker compartido, lo que permite un acceso uniforme a los datos desde otros componentes del sistema, como las bases de datos Elasticsearch y Neo4j.
 
 - **Almacenamiento de Datos en Volúmenes Docker:** Los datos extraídos por los workers se almacenan en volúmenes Docker para facilitar su acceso desde otros servicios y garantizar su persistencia a lo largo del tiempo.
   - *Contribución al manejo eficiente de datos:* Almacenar los datos en volúmenes Docker permite un acceso rápido y eficiente a los mismos desde cualquier componente del sistema. Esto reduce la latencia y mejora el rendimiento en comparación con el almacenamiento en sistemas de archivos externos o bases de datos.
-  - *Integración con otros componentes:* Los volúmenes Docker proporcionan una capa de abstracción para los datos, lo que simplifica su integración con otros servicios, como las bases de datos MongoDB y Neo4j.
+  - *Integración con otros componentes:* Los volúmenes Docker proporcionan una capa de abstracción para los datos, lo que simplifica su integración con otros servicios, como las bases de datos Elasticsearch y Neo4j.
 
-- **Servicios de Bases de Datos (MongoDB y Neo4j):** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
-  - *Contribución al manejo eficiente de datos:* Las bases de datos MongoDB y Neo4j están diseñadas para manejar grandes volúmenes de datos de manera eficiente. Proporcionan capacidades de indexación, consultas optimizadas y almacenamiento escalable que facilitan el acceso y la manipulación de los datos de forma eficiente.
-  - *Integración con otros componentes:* Los datos almacenados en los volúmenes Docker pueden ser fácilmente cargados en las bases de datos MongoDB y Neo4j para su análisis posterior. Estos servicios proporcionan interfaces de programación y consultas que permiten acceder a los datos de manera programática desde otros servicios, como Jupyter y Spark.
+- **Servicios de Bases de Datos (Elasticsearch y Neo4j):** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
+  - *Contribución al manejo eficiente de datos:* Las bases de datos Elasticsearch y Neo4j están diseñadas para manejar grandes volúmenes de datos de manera eficiente. Proporcionan capacidades de indexación, consultas optimizadas y almacenamiento escalable que facilitan el acceso y la manipulación de los datos de forma eficiente.
+  - *Integración con otros componentes:* Los datos almacenados en los volúmenes Docker pueden ser fácilmente cargados en las bases de datos Elasticsearch y Neo4j para su análisis posterior. Estos servicios proporcionan interfaces de programación y consultas que permiten acceder a los datos de manera programática desde otros servicios, como Jupyter y Spark.
 
 ## Almacenamiento de Datos
 
@@ -73,7 +83,7 @@ En esta sección, se propone una solución para el almacenamiento en crudo de lo
 
 #### Volumen Docker para Almacenamiento
 
-Los datos extraídos se almacenarán en un volumen Docker denominado "data". Este enfoque garantiza un acceso centralizado y sencillo desde todos los servicios de bases de datos que se utilizarán, como Neo4j y MongoDB, así como desde herramientas de análisis como Jupyter, ElasticSearch y Spark.
+Los datos extraídos se almacenarán en un volumen Docker denominado "data". Este enfoque garantiza un acceso centralizado y sencillo desde todos los servicios de bases de datos que se utilizarán, como Neo4j y Elasticsearch, así como desde herramientas de análisis como Jupyter, ElasticSearch y Spark.
 
 - **Centralización y Simplificación:** Al almacenar los datos en un volumen Docker, garantizamos un acceso centralizado desde todos los servicios de bases de datos que utilizaremos, así como desde herramientas de análisis. Esto simplifica la gestión y evita la duplicación de datos en diferentes ubicaciones.
 
@@ -93,7 +103,7 @@ Dado que se requerirá acceso programático a los datos a través de diferentes 
     - **Legibilidad y Mantenibilidad:** Legible tanto para humanos como para máquinas, lo que simplifica la comprensión de la estructura y los atributos de los datos, facilitando el desarrollo y mantenimiento del sistema.
 
 - **CSV (Comma-Separated Values):**
-    - **Ideal para Datos Tabulares:** Simplifica la importación de datos en bases de datos relacionales y no relacionales, como MongoDB y Neo4j, permitiendo una integración más fácil con las diferentes bases de datos que se utilizarán en la segunda parte de la práctica.
+    - **Ideal para Datos Tabulares:** Simplifica la importación de datos en bases de datos relacionales y no relacionales, como Elasticsearch y Neo4j, permitiendo una integración más fácil con las diferentes bases de datos que se utilizarán en la segunda parte de la práctica.
 
 Esta solución proporciona una solución robusta y eficiente que optimiza el acceso, la manipulación y la recuperación de información, preparándonos para la siguiente fase de la práctica donde se realizará el tratamiento, manipulación y almacenamiento de los datos extraídos. El uso de un volumen Docker y la selección de formatos de almacenamiento adecuados aseguran un acceso programático sencillo y optimizado a los datos desde diversas herramientas y servicios.
 
@@ -156,13 +166,15 @@ Para comenzar con este proyecto, puedes descargarlo desde el repositorio de GitH
 Alternativamente, puedes clonar el repositorio usando Git. Abre tu terminal o símbolo del sistema y ejecuta el siguiente comando:
 
 ```bash
-git clone https://https://github.com/bnvulpe/papers_infrastructure.git
+git clone https://https://github.com/bnvulpe/PapersLab.git
 ```
 ## Uso
 
 Después de descargar o clonar el repositorio, navega hasta el directorio del proyecto en tu terminal o símbolo del sistema.
 
-Una vez ubicado en la carpeta docker_configuration:
+Una vez ubicado en la carpeta docker-configuration:
+
+Para POWERSHELL de Windows:
 
 1. $env:PWD_PARENT = (Get-Item -Path ".\").Parent.FullName; docker-compose up --build --detach 
 
@@ -170,13 +182,31 @@ Una vez ubicado en la carpeta docker_configuration:
 
 3. use output ID for command : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
-	example: docker cp 356d2ca779e4:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+	example: docker cp 37f7a096ea63:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
 4. cd ..
 
-5. Get-Content -Path .\docker-compose.yml | Out-File -FilePath ".\wiki\docker-compose.txt"
+6. docker-compose up --build --detach
 
-5. docker-compose up --build --detach
+7. docker-compose stop
+
+Para Linux/MacOS:
+
+1. export PWD_PARENT=$(dirname "$(pwd)")
+
+2. docker-compose up --build --detach 
+
+3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+
+4. use output ID for command : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
+
+	example: docker cp 37f7a096ea63:/app/docker-compose.yml $(dirname "$(pwd)")
+
+5. cd ..
+
+7. docker-compose up --build --detach
+
+8. docker-compose stop
 
 ## License
 

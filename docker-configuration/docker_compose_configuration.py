@@ -52,7 +52,7 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
     # ------------------------------ WORKERS ------------------------------
     # Find the start and end indices of the worker block
     start_index = template_content.index('  worker:\n')
-    end_index = template_content.index('  # wiki\n')
+    end_index = template_content.index('  # coordinator\n')
 
     for i, key in enumerate(api_keys, start=1):
         
@@ -86,26 +86,24 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
 
     del template_content[start_index:end_index] # Delete the worker template
 
-    # ------------------------------ WIKI ------------------------------
-    # Find the start and end indices of the wiki block
-    start_index = template_content.index('  wiki:\n')
-    end_index = template_content.index('  # databases\n')
+    # ------------------------------ COORDINATOR ------------------------------
+    # Find the start and end indices of the coordinator block
+    start_index = template_content.index('  coordinator:\n')
+    end_index = template_content.index('  # wiki\n')
 
-    new_wiki = template_content[start_index:end_index].copy()  # Copy the wiki lines
+    new_coord = template_content[start_index:end_index].copy()  # Copy the worker lines
 
-    # Modify relevant lines
-    new_wiki.insert(0,'  # wiki\n')
-    for j, line in enumerate(new_wiki):
-        if "depends_on:" in line:
-            for i in range(1, num_workers + 1):
-                new_wiki.insert(j + i, f"      - worker_{i}\n")
+    new_coord.insert(0,f'  # coordinator\n')
+    for j, line in enumerate(new_coord):
+        if "- NUMBER_WORKERS" in line:
+            new_coord[j] = line.replace("{NUMBER_WORKERS}", str(num_workers))
+        
+    new_coord.append('\n')
+    coord_service = ''.join(new_coord)
+    
+    template_content.extend(coord_service)
 
-    new_wiki.append('\n')
-
-    wiki_service = ''.join(new_wiki)
-    template_content.extend(wiki_service)
-
-    del template_content[start_index-2:end_index] # Delete the wiki template
+    del template_content[start_index-2:end_index] # Delete the worker template
 
     # Save the output file with the replaced variables in the specified folder
     with open(os.path.join(output_folder, output_file), 'w') as output:
