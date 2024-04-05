@@ -1,5 +1,9 @@
 #!/bin/bash
 
+> services_status.txt
+# Run the status script to check the status of the services
+# ./check_status.sh
+
 DEPENDENT_SERVICES=()
 in_depends_on=false
 wiki_on=false
@@ -36,19 +40,26 @@ done < docker-compose.txt
 
 echo "Dependent Services: ${DEPENDENT_SERVICES[@]}"
 
-# Poll Docker's API to check if all dependent services have stopped
+function check_container_state() {
+    local container_name="$1"
+    local container_status=$(curl -sS "$DOCKER_API_URL/containers/$container_name/json" | jq -r '.State.Status')
+
+    if [ "$container_status" = "running" ]; then
+        echo "$container_name: running" >> services_status.txt
+    else
+        echo "$container_name: exited" >> services_status.txt
+    fi
+}
+
+# Iterate over the services and check their status
 while true; do
-    all_exited=false
-    for service in "${DEPENDENT_SERVICES[@]}"; do
-        # Check if the container exists
-        if docker ps -a --format '{{.Names}}' | grep -q "^$service$"; then
-            # Check the state of the container
-            state=$(docker inspect -f '{{.State.Status}}' "$service")
-            if [ "$state" != "exited" ]; then
-                echo "Waiting for $service to stop..."
-                all_exited=true
-                break
-            fi
+    all_exited=true
+    for service in "${SERVICES[@]}"; do
+        check_container_state "$service"
+
+        if [ "$container_status" != "exited" ]; then
+            echo "Waiting for $service to stop..."
+            all_exited=false
         fi
     done
 
@@ -59,3 +70,39 @@ while true; do
 
     sleep 1
 done
+
+# Poll Docker's API to check if all dependent services have stopped
+# while true; do
+#     all_exited=true
+#     for service in "${DEPENDENT_SERVICES[@]}"; do
+#         container_pid=$(ps -ef | grep "docker-containerd-shim.*$service" | grep -v grep | awk '{print $2}')
+
+#         if [ -n "$container_pid" ]; then
+#             state="running"
+#             echo "$service: running" >> services_status.txt
+#             echo "Waiting for $service to stop..."
+#             all_exited=false
+#         else
+#             state="exited"
+#             echo "$service: exited" >> services_status.txt
+#         fi
+        
+        # Check if the container exists
+        # if docker ps -a --format '{{.Names}}' | grep -q "^$service$"; then
+            # Check the state of the container
+        #     state=$(docker inspect -f '{{.State.Status}}' "$service")
+        #     if [ "$state" != "exited" ]; then
+        #         echo "Waiting for $service to stop..."
+        #         all_exited=true
+        #         break
+        #     fi
+        # fi
+#     done
+
+#     if $all_exited; then
+#         echo "All dependent services have stopped."
+#         break
+#     fi
+
+#     sleep 1
+# done
