@@ -191,8 +191,12 @@ git clone https://https://github.com/bnvulpe/PapersLab.git
 Después de descargar o clonar el repositorio, navega hasta el directorio del proyecto en tu terminal o símbolo del sistema.
 
 Una vez ubicado en la carpeta docker-configuration:
+```bash
+cd docker-configuration
+```
 
 Para POWERSHELL de Windows:
+```bash
 
 1. $env:PWD_PARENT = (Get-Item -Path ".\").Parent.FullName; docker-compose up --build --detach 
 
@@ -200,15 +204,17 @@ Para POWERSHELL de Windows:
 
 3. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
-	example: docker cp 37f7a096ea63:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+	example: docker cp eff65bf855b9:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
 4. cd ..
 
 6. docker-compose up --build --detach
 
 7. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop 
+```
 
 Para Linux/MacOS:
+```bash
 
 1. export PWD_PARENT=$(dirname "$(pwd)")
 
@@ -218,13 +224,14 @@ Para Linux/MacOS:
 
 4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
-	example: docker cp 37f7a096ea63:/app/docker-compose.yml $(dirname "$(pwd)")
+	example: docker cp 4bf96ead3131:/app/docker-compose.yml $(dirname "$(pwd)")
 
 5. cd ..
 
 7. docker-compose up --build --detach
 
 8. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop 
+```
 
 ## License
 
