@@ -28,7 +28,8 @@
 
 ## Acerca de
 
-El proyecto tiene como objetivo automatizar la clasificación de contenido y la recuperación de conocimiento, así como realizar análisis sobre el impacto geográfico y temático en la investigación a lo largo del tiempo. Además, se contempla la posibilidad de realizar análisis de redes para analizar la comunicación superficial de referencia en la comunidad científica.
+El proyecto tiene como objetivo automatizar la clasificación de contenido y la recuperación de conocimiento, así como realizar análisis sobre el impacto geográfico y temático en la investigación a lo largo del tiempo. 
+Además, se contempla la posibilidad de realizar análisis de redes para analizar la comunicación superficial de referencia en la comunidad científica.
 
 ## Infraestructura
 
@@ -38,23 +39,23 @@ En esta sección, se identifican y describen los componentes clave de la infraes
 
 La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples API keys. Consiste en cuatro workers, uno para cada API key asociada a los miembros del grupo. Además de estos workers, se han implementado dos servicios adicionales: uno para acceder a la API de wiki y obtener información de los publishers, y otro para acceder a la API de Crossref y obtener la ubicación de los publishers.
 
-El objetivo de estos servicios adicionales es enriquecer los datos extraídos de las API de papers científicos con información adicional sobre los publishers, lo que puede ser útil para análisis posteriores. La integración de estos servicios amplía la funcionalidad de la infraestructura, permitiendo una recopilación más completa y enriquecida de los datos.
+El objetivo de estos servicios adicionales es enriquecer los datos extraídos de las API de papers científicos con información geográfica adicional, considerado útil para análisis posteriores. La integración de estos servicios amplía la funcionalidad de la infraestructura, permitiendo una recopilación más completa y enriquecida de los datos.
 
 Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
 
 - **Neo4j:** se trata de una base de datos de grafos que es ideal para modelar y representar relaciones complejas entre entidades, como los autores de los papers, las citas entre papers y las conexiones entre conceptos científicos. Al aprovechar la capacidad de Neo4j para almacenar datos en forma de grafos, pueden modelar fácilmente las relaciones entre los distintos atributos. Esto permite consultas eficientes para descubrir patrones y relaciones entre los datos.
 
-- **Elasticsearch:** motor de búsqueda que puede ser utilizado para indexar y buscar los contenidos de los papers científicos, así como también para almacenar y consultar la información obtenida de la API de Wiki. Elasticsearch ofrece capacidades avanzadas de búsqueda de texto completo, agregaciones, análisis de datos y visualización, lo que facilita la extracción de información significativa de grandes conjuntos de datos no estructurados. Además, Elasticsearch es altamente escalable y tolerante a fallos, lo que lo hace adecuado para manejar grandes volúmenes de datos y cargas de trabajo distribuidas.
+- **Elasticsearch:** motor de búsqueda que puede ser utilizado para indexar y buscar los contenidos de los papers científicos, así como también para almacenar y consultar la información obtenida. Elasticsearch ofrece capacidades avanzadas de búsqueda de texto completo, agregaciones, análisis de datos y visualización, lo que facilita la extracción de información significativa de grandes conjuntos de datos no estructurados. Además, Elasticsearch es altamente escalable y tolerante a fallos, lo que lo hace adecuado para manejar grandes volúmenes de datos y cargas de trabajo distribuidas.
 
 #### Estructura de Carpetas:
 
 - **Carpeta docker-configuration:**
   - *docker-compose.yml.template:* Template del Docker Compose utilizado para generar el archivo de configuración.
-  - *docker_compose_configuration.py:* Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes.
+  - *docker_compose_configuration.py:* Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes, junto a otras asignaciones automatizadas.
   - *Dockerfile:* Archivo para construir la imagen de Docker necesaria para ejecutar *docker_compose_configuration.py*.
   - *docker-compose.yml:* Docker Compose utilizado para montar la imagen anterior y crear el volumen donde se guardarán los datos.
-  - *.env:* Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT.
-  - *env_vars.txt:* Archivo de texto donde se encuentran las 4 API keys (una en cada línea).
+  - *.env:* Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT, personalizables por usuario.
+  - *env_vars.txt:* Archivo de texto donde se encuentran las API keys (una en cada línea), asegurando un worker por cada key.
 
 - **Carpeta worker:**
   - *worker.py:* Script encargado de la extracción de datos desde la API.
@@ -63,15 +64,13 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
 
 - **Carpeta wiki:**
   - *wiki.py:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida. 
-  - *wait-for-it.sh:* Script Bash que pimplementa la espera a que el host y el puerto 1234 (abierto mediante el coordinador) estén disponibles para continuar con la ejecución de este microservicio.
   - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
-  - *Dockerfile:* Dockerfile que construye la imagen que ejecuta *wait-for-it.sh*, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *wiki.py*.
+  - *Dockerfile:* Dockerfile que construye la imagen que descarga y ejecuta *wait-for-it.sh*, un script Bash que implementa la espera a que el host y el puerto 1234 (abierto mediante el coordinador) estén disponibles para continuar con la ejecución de este microservicio. Además, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *wiki.py*.
 
 - **Carpeta crossref:**
   - *crossref.py:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
-  - *wait-for-it.sh:* Similar al de la carpeta wiki
   - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
-  -  *Dockerfile:* Dockerfile que construye la imagen que ejecuta *wait-for-it.sh*, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *crossref.py*.
+  -  *Dockerfile:* Dockerfile que construye la imagen que descarga y ejecuta *wait-for-it.sh*, un script Bash que implementa la espera a que el host y el puerto 1234 (abierto mediante el coordinador) estén disponibles para continuar con la ejecución de este microservicio. Además, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *crossref.py*.
 
 - **Carpeta coordinator:**
   - *coordinator.py:* Script que implementa un servidor TCP que espera a recibir mensajes de los contenedores de los workers y una vez que ha recibido tantos mensajes como workers activa el puerto 1234 en el que se ejecutarán los servicios wiki y crossref.
@@ -165,15 +164,17 @@ En este apartado, se abordan las decisiones de diseño que se fundamentan en los
 
 ## Alcance
 
-En este apartado se aborda qué dimensiones del Big Data se han sacrificado, si es el caso, y cómo esta decisión simplifica la implementación de la infraestructura sin comprometer significativamente su funcionalidad.
+En este apartado se aborda cómo las dimensiones del Big Data han sido abordadas y cómo estas decisiones simplifican la implementación de la infraestructura sin comprometer su funcionalidad.
 
-Si bien en nuestro servicio se ha sacrificado la variedad de datos en favor del volumen y la variedad en el proceso final de almacenamiento, esta decisión simplifica la implementación de la infraestructura sin comprometer significativamente su funcionalidad.
+Este proyecto se basa en las dimensiones clave del Big Data, como la velocidad, la veracidad y el valor, para ofrecer resultados óptimos. En términos de velocidad, hemos optado por tecnologías más económicas que permiten una flexibilidad mayor en el procesamiento de datos. Esto se traduce en la capacidad de extraer datos de manera eficiente y en tiempo real, tanto en procesos batch como en múltiples flujos de datos históricos. En cuanto a la veracidad, nos hemos centrado en garantizar la fiabilidad y autenticidad de los datos. Esto implica verificar la consistencia estadística y la fiabilidad de las API utilizadas, como Crossref, Wikidata y CoreAPI. Aseguramos la fiabilidad de los datos validando su origen, métodos de recopilación y procesamiento, así como la infraestructura de confianza utilizada. En cuanto al valor, nuestro enfoque se basa en ofrecer insights significativos y prácticos a partir de los datos recopilados, proporcionando un retorno de inversión tangible y beneficios tangibles para las partes interesadas.
 
-- **Enfoque en Volumen y Variedad en el Almacenamiento Final:** Esta decisión prioriza la cantidad y diversidad de los datos procesados y almacenados. Se simplifica la implementación al reducir la complejidad en la fase inicial de procesamiento, permitiendo un mayor énfasis en la cantidad de datos recopilados y la variedad de fuentes finales de almacenamiento, como Neo4j y Elasticsearch.
+Si bien hemos sacrificado la variedad de datos en favor del volumen y la variedad en el almacenamiento final, esta decisión simplifica la implementación de la infraestructura sin comprometer significativamente su funcionalidad.
 
-- **Formato JSON para los Datos Recopilados:** La elección de conservar los datos en formato JSON simplifica el proceso de extracción y almacenamiento inicial. Este formato es fácilmente manipulable y compatible con la mayoría de las herramientas y plataformas de análisis de datos, reduciendo la complejidad en la fase inicial de procesamiento.
+- **Enfoque en Volumen y Variedad en el Almacenamiento Final:** Priorizamos la cantidad y diversidad de los datos procesados y almacenados. Esto simplifica la implementación al reducir la complejidad en la fase inicial de procesamiento, permitiendo un mayor énfasis en la cantidad de datos recopilados y la variedad de fuentes finales de almacenamiento, como Neo4j y Elasticsearch.
 
-- **Almacenamiento de Información de Wikidata en Formato CSV:** Optar por guardar la información obtenida de Wikidata en formato CSV muestra un enfoque pragmático para el análisis posterior. Facilita la manipulación y el análisis de estos datos específicos para el estudio geográfico previsto.
+- **Formato JSON para los Datos Recopilados:** Optamos por conservar los datos en formato JSON, lo que simplifica el proceso de extracción y almacenamiento inicial. Este formato es fácilmente manipulable y compatible con la mayoría de las herramientas y plataformas de análisis de datos, reduciendo la complejidad en la fase inicial de procesamiento.
+
+- **Almacenamiento de Información de Wikidata en Formato CSV:** Decidimos guardar la información obtenida de Wikidata en formato CSV, lo que muestra un enfoque pragmático para el análisis posterior. Facilita la manipulación y el análisis de estos datos específicos para el estudio geográfico previsto.
 
 En resumen, el enfoque en el volumen y la variedad en el proceso final de almacenamiento simplifica la implementación de la infraestructura al reducir la complejidad en las etapas iniciales de extracción y almacenamiento, al tiempo que facilita la integración y el análisis posterior de los datos recopilados.
 
