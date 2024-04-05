@@ -1,1 +1,1 @@
-https://github.com/bnvulpe/papers_infrastructure/tree/main
+https://github.com/bnvulpe/PapersLab.git
