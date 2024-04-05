@@ -180,7 +180,7 @@ Para POWERSHELL de Windows:
 
 2. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
 
-3. use output ID for command : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+3. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
 	example: docker cp 37f7a096ea63:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
@@ -188,7 +188,7 @@ Para POWERSHELL de Windows:
 
 6. docker-compose up --build --detach
 
-7. docker-compose stop
+7. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop 
 
 Para Linux/MacOS:
 
@@ -198,7 +198,7 @@ Para Linux/MacOS:
 
 3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
 
-4. use output ID for command : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
+4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
 	example: docker cp 37f7a096ea63:/app/docker-compose.yml $(dirname "$(pwd)")
 
@@ -206,16 +206,9 @@ Para Linux/MacOS:
 
 7. docker-compose up --build --detach
 
-8. docker-compose stop
+8. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop 
 
 ## License
 
 Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles.
 
-
-!! close network so no external communication allowed...maybe find secure input of keys : add bridge network to dirrecly specifiy that
-Falta:
-- Explicar la carpeta y ficheros wiki_data
-- Añadir explicación de la elección del formato JSON y CSV o en el segundo o cuarto punto.
-- Añadir comandos para otros tipos de terminales
-https://github.com/bnvulpe/papers_infrastructure/tree/234a16a186221252fc938f67f9f903e75907e513
