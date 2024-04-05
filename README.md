@@ -36,32 +36,46 @@ En esta sección, se identifican y describen los componentes clave de la infraes
 
 ### Microservicios de Extracción de Datos
 
-La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples API keys. Consiste en cuatro workers, uno para cada API key asociada a los miembros del grupo. Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
+La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples API keys. Consiste en cuatro workers, uno para cada API key asociada a los miembros del grupo. Además de estos workers, se han implementado dos servicios adicionales: uno para acceder a la API de wiki y obtener información de los publishers, y otro para acceder a la API de Crossref y obtener la ubicación de los publishers.
 
-- **Neo4j**: se trata de una base de datos de grafos que es ideal para modelar y representar relaciones complejas entre entidades, como los autores de los papers, las citas entre papers y las conexiones entre conceptos científicos. Al aprovechar la capacidad de Neo4j para almacenar datos en forma de grafos, pueden modelar fácilmente las relaciones entre los distintos atributos. Esto permite consultas eficientes para descubrir patrones y relaciones entre los datos.
+El objetivo de estos servicios adicionales es enriquecer los datos extraídos de las API de papers científicos con información adicional sobre los publishers, lo que puede ser útil para análisis posteriores. La integración de estos servicios amplía la funcionalidad de la infraestructura, permitiendo una recopilación más completa y enriquecida de los datos.
 
-- **Elasticsearch**: motor de búsqueda que puede ser utilizado para indexar y buscar los contenidos de los papers científicos, así como también para almacenar y consultar la información obtenida de la API de Wiki. Elasticsearch ofrece capacidades avanzadas de búsqueda de texto completo, agregaciones, análisis de datos y visualización, lo que facilita la extracción de información significativa de grandes conjuntos de datos no estructurados. Además, Elasticsearch es altamente escalable y tolerante a fallos, lo que lo hace adecuado para manejar grandes volúmenes de datos y cargas de trabajo distribuidas.
+Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
+
+- **Neo4j:** se trata de una base de datos de grafos que es ideal para modelar y representar relaciones complejas entre entidades, como los autores de los papers, las citas entre papers y las conexiones entre conceptos científicos. Al aprovechar la capacidad de Neo4j para almacenar datos en forma de grafos, pueden modelar fácilmente las relaciones entre los distintos atributos. Esto permite consultas eficientes para descubrir patrones y relaciones entre los datos.
+
+- **Elasticsearch:** motor de búsqueda que puede ser utilizado para indexar y buscar los contenidos de los papers científicos, así como también para almacenar y consultar la información obtenida de la API de Wiki. Elasticsearch ofrece capacidades avanzadas de búsqueda de texto completo, agregaciones, análisis de datos y visualización, lo que facilita la extracción de información significativa de grandes conjuntos de datos no estructurados. Además, Elasticsearch es altamente escalable y tolerante a fallos, lo que lo hace adecuado para manejar grandes volúmenes de datos y cargas de trabajo distribuidas.
 
 #### Estructura de Carpetas:
 
 - **Carpeta docker-configuration:**
-  - *docker-compose.yml.template*: Template del Docker Compose utilizado para generar el archivo de configuración.
-  - *docker_compose_configuration.py*: Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes.
-  - *Dockerfile*: Archivo para construir la imagen de Docker necesaria para ejecutar *docker_compose_configuration.py*.
-  - *docker-compose.yml*: Docker Compose utilizado para montar la imagen anterior y crear el volumen donde se guardarán los datos.
-  - *.env*: Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT.
-  - *env_vars.txt*: Archivo de texto donde se encuentran las 4 API keys (una en cada línea).
+  - *docker-compose.yml.template:* Template del Docker Compose utilizado para generar el archivo de configuración.
+  - *docker_compose_configuration.py:* Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes.
+  - *Dockerfile:* Archivo para construir la imagen de Docker necesaria para ejecutar *docker_compose_configuration.py*.
+  - *docker-compose.yml:* Docker Compose utilizado para montar la imagen anterior y crear el volumen donde se guardarán los datos.
+  - *.env:* Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT.
+  - *env_vars.txt:* Archivo de texto donde se encuentran las 4 API keys (una en cada línea).
 
 - **Carpeta worker:**
-  - *worker.py*: Script encargado de la extracción de datos desde la API.
-  - *requirements.txt*: Archivo que especifica las librerías necesarias para ejecutar el script.
-  - *Dockerfile*: Dockerfile que construye la imagen responsable de ejecutar *worker.py* e instala las librerías especificadas en requirements.txt.
+  - *worker.py:* Script encargado de la extracción de datos desde la API.
+  - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
+  - *Dockerfile:* Dockerfile que construye la imagen responsable de ejecutar *worker.py* e instala las librerías especificadas en requirements.txt.
 
-- **Carpeta wiki**
-  - *wiki.py*: Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida. 
-  - *check_health.sh*: Archivo shell que comprueba que los workers han terminado antes de iniciar el servicio wiki.
-  - *entrypoint.sh*: Archivo que ejecuta el fichero *check_health.sh* y, a continuación, *wiki.py*.
-  - *Dockerfile*: Dockerfile que construye la imagen que ejecuta *entrypoint.sh* e instala las librerías necesarias especificadas en el fichero requirements.txt.
+- **Carpeta wiki:**
+  - *wiki.py:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida. 
+  - *wait-for-it.sh:* Script Bash que pimplementa la espera a que el host y el puerto 1234 (abierto mediante el coordinador) estén disponibles para continuar con la ejecución de este microservicio.
+  - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
+  - *Dockerfile:* Dockerfile que construye la imagen que ejecuta *wait-for-it.sh*, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *wiki.py*.
+
+- **Carpeta crossref:**
+  - *crossref.py:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
+  - *wait-for-it.sh:* Similar al de la carpeta wiki
+  - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
+  -  *Dockerfile:* Dockerfile que construye la imagen que ejecuta *wait-for-it.sh*, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *crossref.py*.
+
+- **Carpeta coordinator:**
+  - *coordinator.py:* Script que implementa un servidor TCP que espera a recibir mensajes de los contenedores de los workers y una vez que ha recibido tantos mensajes como workers activa el puerto 1234 en el que se ejecutarán los servicios wiki y crossref.
+  - *Dockerfile:* Dockerfile que construye la imagen encargada de ejecutar el script *coordinator.py*.
 
 ### Explicación de Componentes
 
@@ -76,6 +90,10 @@ La infraestructura se basa en microservicios diseñados para la extracción efic
 - **Servicios de Bases de Datos (Elasticsearch y Neo4j):** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
   - *Contribución al manejo eficiente de datos:* Las bases de datos Elasticsearch y Neo4j están diseñadas para manejar grandes volúmenes de datos de manera eficiente. Proporcionan capacidades de indexación, consultas optimizadas y almacenamiento escalable que facilitan el acceso y la manipulación de los datos de forma eficiente.
   - *Integración con otros componentes:* Los datos almacenados en los volúmenes Docker pueden ser fácilmente cargados en las bases de datos Elasticsearch y Neo4j para su análisis posterior. Estos servicios proporcionan interfaces de programación y consultas que permiten acceder a los datos de manera programática desde otros servicios, como Jupyter y Spark.
+
+- **Servicio de Coordinador:**  Este microservicio actúa como un orquestador, asegurando que los servicios se ejecuten en el orden adecuado y proporcionando una señal para habilitar la ejecución de servicios subsiguientes (wiki y crossref) una vez que los workers han completado su tarea.
+  - *Contribución al manejo eficiente de datos:* El servicio de coordinador garantiza un flujo eficiente de trabajo al asegurar que los diferentes servicios se ejecuten en el orden correcto, minimizando el tiempo de inactividad y maximizando la utilización de los recursos disponibles. Asimismo, permite una gestión eficiente de los datos al controlar la secuencia de ejecución de los servicios, lo que asegura que los datos se procesen y enriquezcan de manera oportuna y coherente.
+  - *Integración con otros componentes:* Se integra estrechamente con los workers encargados de la extracción de datos de las API de papers científicos, coordinando su ejecución y proporcionando una señal para habilitar la ejecución de servicios subsiguientes. Coordina la ejecución de los servicios adicionales que acceden a la wiki y a la API de Crossref, asegurando que se realicen después de que los workers hayan completado su tarea. Por último, interactúa con el volumen de Docker llamado "data" para acceder a los datos descargados y facilitar su posterior procesamiento y manipulación en los servicios subsiguientes de almacenamiento y tratamiento de datos.
 
 ## Almacenamiento de Datos
 
@@ -182,7 +200,7 @@ Para POWERSHELL de Windows:
 
 3. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
-	example: docker cp 68fb1f5790f5:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+	example: docker cp 37f7a096ea63:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
 4. cd ..
 
@@ -200,7 +218,7 @@ Para Linux/MacOS:
 
 4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
-	example: docker cp 19f492ffc52f:/app/docker-compose.yml $(dirname "$(pwd)")
+	example: docker cp 37f7a096ea63:/app/docker-compose.yml $(dirname "$(pwd)")
 
 5. cd ..
 
@@ -211,4 +229,3 @@ Para Linux/MacOS:
 ## License
 
 Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles.
-
