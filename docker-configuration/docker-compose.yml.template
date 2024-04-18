@@ -1,9 +1,5 @@
 version: '3'
 
-networks:
-  internal_network:
-    driver: bridge
-
 services:
 
   worker:
@@ -19,8 +15,6 @@ services:
       - type: bind
         source: ./data
         target: /data
-    networks:
-      - internal_network
     depends_on:
       - coordinator
 
@@ -31,11 +25,8 @@ services:
     container_name: coordinator
     environment:
     - NUMBER_WORKERS={NUMBER_WORKERS}
-    networks:
-      - internal_network
     ports:
       - "12345:12345"
-
 
   # wiki
 
@@ -46,8 +37,6 @@ services:
       - type: bind
         source: ./data
         target: /data
-    networks:
-        - internal_network    
     command: ["./wait-for-it.sh", "coordinator:1234", "--timeout=0", "--", "python", "wiki.py"]
 
   # crossref
@@ -59,8 +48,6 @@ services:
       - type: bind
         source: ./data
         target: /data
-    networks:
-        - internal_network    
     command: ["./wait-for-it.sh", "coordinator:1234", "--timeout=0", "--", "python", "crossref.py"]
 
   # databases
