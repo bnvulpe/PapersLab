@@ -2,6 +2,7 @@ import requests
 import csv
 import os
 import json
+import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
 def formatterParams(title, authors):
@@ -79,21 +80,21 @@ def process_paper(paper):
     url = f"https://api.crossref.org/works?query.author={authors}&query.title={title}"
     
     with requests.Session() as session:
-        response = session.get(url)
+        response = session.get(url, stream=True)
         if response.status_code == 200:
             data = response.json()
             publisher_location = find_publisher_location(data)
             if publisher_location:
-                # Prepare data to write to CSV
-                csv_data = {'original_title': paper['title'], 'publisher_location': publisher_location}
-                # Write data to CSV file
-                create_or_append_csv(output_csv, ['original_title', 'publisher_location'], csv_data)
+                # Añadir los datos del título del artículo y la ubicación del editor a la lista
+                # print(f'Title: {paper["title"]}, Location: {publisher_location}')
+                return ({'original_title': paper['title'], 'publisher_location': publisher_location})
             else:
-                # Write "No location found" to CSV if publisher location is not found
-                csv_data = {'original_title': paper['title'], 'publisher_location': 'No location found'}
-                create_or_append_csv(output_csv, ['original_title', 'publisher_location'], csv_data)
+                # Añadir "No location found" a la lista si no se encuentra la ubicación del editor
+                # print(f'Title: {paper["title"]}, Location: "No location found"')
+                return ({'original_title': paper['title'], 'publisher_location': 'No location found'})
         else:
             print("Failed to fetch data from the API")
+
 
 def returnLocationFolder(directory, output_csv):
     '''
@@ -112,10 +113,14 @@ def returnLocationFolder(directory, output_csv):
     
     # Parallelize the processing of papers
     with ThreadPoolExecutor() as executor:
-        executor.map(process_paper, papers)
+        results = executor.map(process_paper, papers)
+
+    df = pd.DataFrame(results)
+    return df
 
 if __name__ == "__main__":
-    directory = "/data"
+    directory = "./data"
     output_csv = '/data/paper_locations.csv'
 
-    returnLocationFolder(directory, output_csv)
+    df_data = returnLocationFolder(directory, output_csv)
+    df_data.to_csv(output_csv, index=False)
