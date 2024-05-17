@@ -84,7 +84,7 @@ def save_json(json_object, filename):
 
     '''
     with open(filename, 'w') as f:
-        f.write(json.dumps(json_object, indent=2))
+        [f.write(json.dumps(json) + '\n') for json in json_object]
 
 def main():
     '''
