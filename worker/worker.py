@@ -84,8 +84,7 @@ def save_json(json_object, filename):
 
     '''
     with open(filename, 'w') as f:
-        [f.write(json.dumps(json) + '\n') for json in json_object]
-
+        f.write(json.dumps(json_object, indent=2))
 def main():
     '''
     Main function to extract papers from the API.

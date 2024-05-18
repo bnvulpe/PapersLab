@@ -119,7 +119,7 @@ def returnLocationFolder(directory, output_csv):
     return df
 
 if __name__ == "__main__":
-    directory = "./data"
+    directory = "/data"
     output_csv = '/data/paper_locations.csv'
 
     df_data = returnLocationFolder(directory, output_csv)

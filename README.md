@@ -199,15 +199,17 @@ cd docker-configuration
 Para POWERSHELL de Windows:
 ```bash
 
-1. $env:PWD_PARENT = (Get-Item -Path ".\").Parent.FullName; docker-compose up --build --detach 
+1. docker build -t docker_configuration .
 
-2. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+2. $env:PWD_PARENT = (get-item -Path ".\").Parent.FullName;docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
 
-3. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+
+4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
 	example: docker cp eff65bf855b9:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
 
-4. cd ..
+5. cd ..
 
 6. docker-compose up --build --detach
 
@@ -219,15 +221,17 @@ Para Linux/MacOS:
 
 1. export PWD_PARENT=$(dirname "$(pwd)")
 
-2. docker-compose up --build --detach 
+2. docker build -t docker_configuration .
 
-3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+3. docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
 
-4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
+4. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+
+5. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
 	example: docker cp 4bf96ead3131:/app/docker-compose.yml $(dirname "$(pwd)")
 
-5. cd ..
+6. cd ..
 
 7. docker-compose up --build --detach
 
