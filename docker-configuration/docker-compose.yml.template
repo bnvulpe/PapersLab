@@ -28,27 +28,19 @@ services:
     ports:
       - "12345:12345"
 
-  # wiki
+  # merger
 
-  wiki:
-    build:  ./wiki
-    container_name: wiki
+  merger:
+    build:  ./merger
+    container_name: merger
     volumes:
       - type: bind
         source: ./data
         target: /data
-    command: ["./wait-for-it.sh", "coordinator:1234", "--timeout=0", "--", "python", "wiki.py"]
-
-  # crossref
-
-  crossref:
-    build:  ./crossref
-    container_name: crossref
-    volumes:
       - type: bind
-        source: ./data
-        target: /data
-    command: ["./wait-for-it.sh", "coordinator:1234", "--timeout=0", "--", "python", "crossref.py"]
+        source: ./dfs
+        target: /dfs
+    command: ["./wait-for-it.sh", "coordinator:1234", "--timeout=0", "--", "python", "merge.py"]
 
   # databases
   #mongo:
@@ -74,12 +66,4 @@ services:
   #  environment:
   #    - NEO4J_AUTH=neo4j/password  # Neo4j authentication
 
-  # jupyter
-
-  #  image: jupyter/minimal-notebook
-  #   ports:
-  #     - 8888:8888
-  #   volumes:
-  #     - "./notebooks:/home/jovyan/work/notebooks"
-  #   command: ["start-notebook.sh","--NotebookApp.token=''","--NotebookApp.password=''"]
 

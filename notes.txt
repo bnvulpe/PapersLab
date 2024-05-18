@@ -1,0 +1,63 @@
+When comparing Hadoop MapReduce with Apache Spark for tasks like enriching .json files containing paper data with sentiment analysis scores, Spark generally offers several advantages over Hadoop MapReduce in terms of ease of use, performance, and flexibility. Here's why:
+
+### Apache Spark:
+
+1. **Ease of Use**: Spark provides higher-level APIs in languages like Scala, Java, Python, and R, which are more developer-friendly compared to Hadoop MapReduce. Spark's DataFrame and Dataset APIs offer simpler and more expressive ways to manipulate data compared to raw MapReduce programming.
+
+2. **Performance**: Spark is known for its in-memory processing capabilities, which can result in significantly faster processing times compared to Hadoop MapReduce, especially for iterative algorithms and interactive data analysis. Spark's ability to cache data in memory between multiple operations reduces the need for repeated disk I/O, leading to faster execution.
+
+3. **Flexibility**: Spark offers a wide range of libraries and built-in functions for various data processing tasks, including SQL queries, machine learning, graph processing, and streaming. This flexibility allows you to perform multiple types of data enrichment and analysis within the same framework, without having to switch between different tools or systems.
+
+4. **Unified Processing Engine**: Spark provides a unified processing engine that supports batch processing, interactive queries, stream processing, and machine learning within the same runtime environment. This simplifies the development and deployment of complex data pipelines and analytical applications.
+
+5. **Community and Ecosystem**: Spark has a large and active open-source community, as well as a rich ecosystem of third-party libraries and tools. This vibrant ecosystem provides access to a wide range of resources, documentation, tutorials, and support forums, making it easier to learn and use Spark effectively.
+
+### Conclusion:
+
+While it's possible to accomplish tasks like enriching .json files with sentiment analysis scores using Hadoop MapReduce, Apache Spark generally offers a more efficient, developer-friendly, and feature-rich platform for such tasks. Spark's higher-level abstractions, in-memory processing, and comprehensive ecosystem make it a preferred choice for many data processing and analytics use cases, including data enrichment and transformation. Therefore, for tasks like the one you described, using Apache Spark is likely to be easier and more productive compared to Hadoop MapReduce.
+
+Como están las carpetas antes de ejecutar:
+- coordinator: coordinator.py, Dockerfile
+- data: info.md 
+- dfs: info.md, text_classification.ipynb
+- docker-configuration: .env, docker_compose_configuration, docker-compose.yml.template, Dockerfile, env_vars
+- merger: Dockerfile, merge.py
+- spark: docker-compose, Dockerfile.worker
+- worker: Dockerfile, worker.py, requirements
+ 
+Afuera: LICENSE, notes, README, Repository
+--------------------------------------------------------------------
+1. docker build -t docker_configuration .
+2. $env:PWD_PARENT = (Get-Item -Path ".\").Parent.FullName;docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
+
+3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+
+3. Utilice el output ID del paso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+
+	example: docker cp 5bbd9e57a37e:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+
+4. cd ..
+
+6. docker-compose up --build --detach
+
+7. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop  
+
+-------------------------------------------------------------------------------------
+
+Una vez tenemos el archivo all_data.json en dfs folder
+
+1. cd ./spark
+2. docker-compose up --build --detach
+3. docker exec -it jupyterlab jupyter nbconvert --execute --to notebook --inplace /opt/workspace/text_classification.ipynb
+
+Para desmontar todo:
+en /spark:  docker compose down
+cd ../docker-configuration
+docker compose down
+
+y en docker borrar de:
+- contenedores docker_configuration
+- images, build y volumes lo que sea dependiente de este proyecto
+
+Así está todo limpito en el ordenador :D
+

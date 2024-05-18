@@ -11,8 +11,4 @@ RUN chmod +x wait-for-it.sh
 # Copy the rest of the application files
 COPY ./ ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Set the entry point
-CMD ["python", "crossref.py"]
+CMD ["python", "merge.py"]

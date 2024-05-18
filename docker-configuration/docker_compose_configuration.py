@@ -89,7 +89,7 @@ def configure_docker_compose(template_file, output_file, api_keys_file, output_f
     # ------------------------------ COORDINATOR ------------------------------
     # Find the start and end indices of the coordinator block
     start_index = template_content.index('  coordinator:\n')
-    end_index = template_content.index('  # wiki\n')
+    end_index = template_content.index('  # merger\n')
 
     new_coord = template_content[start_index:end_index].copy()  # Copy the worker lines
 
