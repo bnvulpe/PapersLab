@@ -29,6 +29,16 @@ Afuera: LICENSE, notes, README, Repository
 --------------------------------------------------------------------
 en bash:
 
+'''
+you may need
+
+cd PapersLab
+cd docker-configuration
+$PWD_PARENT = Split-Path -Parent $PWD
+$env:PWD_PARENT = $PWD_PARENT
+
+then you continue on step 2
+'''
 1. export PWD_PARENT=$(dirname "$(pwd)")
 
 2. docker build -t docker_configuration .
