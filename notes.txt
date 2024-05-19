@@ -27,28 +27,33 @@ Como están las carpetas antes de ejecutar:
  
 Afuera: LICENSE, notes, README, Repository
 --------------------------------------------------------------------
-1. docker build -t docker_configuration .
-2. $env:PWD_PARENT = (Get-Item -Path ".\").Parent.FullName;docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
+en bash:
 
-3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+1. export PWD_PARENT=$(dirname "$(pwd)")
 
-3. Utilice el output ID del paso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+2. docker build -t docker_configuration .
 
-	example: docker cp 5bbd9e57a37e:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+3. docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
 
-4. cd ..
+4. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
 
-6. docker-compose up --build --detach
+5. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
-7. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop  
+	example: docker cp 5699c33389aa:/app/docker-compose.yml $(dirname "$(pwd)")
+
+6. cd ..
+
+7. docker-compose up --build --detach
 
 -------------------------------------------------------------------------------------
 
 Una vez tenemos el archivo all_data.json en dfs folder
 
 1. cd ./spark
+2. ./build.sh
 2. docker-compose up --build --detach
-3. docker exec -it jupyterlab jupyter nbconvert --execute --to notebook --inplace /opt/workspace/text_classification.ipynb
+3. docker exec -it jupyterlab bash
+3. jupyter nbconvert --execute --to notebook --inplace /opt/workspace/text_classification.ipynb
 
 Para desmontar todo:
 en /spark:  docker compose down

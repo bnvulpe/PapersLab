@@ -229,7 +229,7 @@ Para Linux/MacOS:
 
 5. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
-	example: docker cp 4bf96ead3131:/app/docker-compose.yml $(dirname "$(pwd)")
+	example: docker cp 5699c33389aa:/app/docker-compose.yml $(dirname "$(pwd)")
 
 6. cd ..
 
