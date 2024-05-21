@@ -18,5 +18,6 @@ RUN apt-get update -y && \
 
 EXPOSE 8888
 WORKDIR ${SHARED_WORKSPACE}
+#RUN chmod +x run_notebooks.sh
 CMD jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=
 

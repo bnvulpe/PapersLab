@@ -15,6 +15,7 @@ services:
       - 8889:8888
     volumes:
       - shared-workspace:/opt/workspace
+    command: ["bash", "-c", "./run_notebooks.sh && jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token="]
   spark-master:
     image: spark-master
     container_name: spark-master
@@ -23,29 +24,18 @@ services:
       - 7077:7077
     volumes:
       - shared-workspace:/opt/workspace
-  spark-worker-1:
+  spark-worker:
     image: spark-worker
-    container_name: spark-worker-1
     environment:
       - SPARK_WORKER_CORES=1
       - SPARK_WORKER_MEMORY=1024m
     ports:
-      - 4041:4040
-      - 18081:18080
+      - "0:4040"  # Allow Docker to dynamically allocate the host port for the worker UI
+      - "0:18080"  # Allow Docker to dynamically allocate the host port for the history server
     volumes:
       - shared-workspace:/opt/workspace
     depends_on:
-      - spark-master
-  spark-worker-2:
-    image: spark-worker
-    container_name: spark-worker-2
-    environment:
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=1024m
-    ports:
-      - 4042:4040
-      - 18082:18080
-    volumes:
-      - shared-workspace:/opt/workspace
-    depends_on:
-      - spark-master
+      - spark-master 
+    deploy:
+      mode: replicated
+      replicas: ${SPARK_WORKER_REPLICAS}

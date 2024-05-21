@@ -115,7 +115,7 @@ def main():
         while True:
             try:
                 query = f"yearPublished>={begin_year} AND yearPublished<={end_year}"
-                results, _ = query_api("search/works", query, key, is_scroll=True, limit=1000, scrollId=scroll_id)
+                results, _ = query_api("search/works", query, key, is_scroll=True, limit=50, scrollId=scroll_id)
                 if 'scrollId' in results:
                     scroll_id = results['scrollId']  # save the scrollId for the next call
                 
