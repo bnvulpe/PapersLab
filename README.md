@@ -28,8 +28,7 @@
 
 ## Acerca de
 
-El proyecto tiene como objetivo automatizar la clasificación de contenido y la recuperación de conocimiento, así como realizar análisis sobre el impacto geográfico y temático en la investigación a lo largo del tiempo. 
-Además, se contempla la posibilidad de realizar análisis de redes para analizar la comunicación superficial de referencia en la comunidad científica.
+El proyecto tiene como objetivo ofrecer una conveniente estructura de datos sobre papers científicos y sus características específicas, proporcionando una estructura eficiente tanto para el procesamiento de datos como para su almacenamiento y análisis posterior, según las necesidades del cliente.
 
 ## Infraestructura
 
@@ -37,9 +36,7 @@ En esta sección, se identifican y describen los componentes clave de la infraes
 
 ### Microservicios de Extracción de Datos
 
-La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples API keys. Consiste en cuatro workers, uno para cada API key asociada a los miembros del grupo. Además de estos workers, se han implementado dos servicios adicionales: uno para acceder a la API de wiki y obtener información de los publishers, y otro para acceder a la API de Crossref y obtener la ubicación de los publishers.
-
-El objetivo de estos servicios adicionales es enriquecer los datos extraídos de las API de papers científicos con información geográfica adicional, considerado útil para análisis posteriores. La integración de estos servicios amplía la funcionalidad de la infraestructura, permitiendo una recopilación más completa y enriquecida de los datos.
+La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples claves API. Consiste en cuatro workers, cada uno asociado a una clave API específica de los miembros del grupo. Además de estos workers, se implementó un servicio adicional para la fusión de los datos extraídos por cada worker, de manera que finalicemos la etapa de extracción con un único archivo en formato JSON que contenga toda la información recabada.
 
 Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
 
@@ -49,6 +46,21 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
 
 #### Estructura de Carpetas:
 
+- **Carpeta coordinator:**
+  - *coordinator.py:* Script que implementa un servidor TCP que espera a recibir mensajes de los contenedores de los workers y una vez que ha recibido tantos mensajes como workers activa el puerto 1234 en el que se ejecutarán los servicios wiki y crossref.
+  - *Dockerfile:* Dockerfile que construye la imagen encargada de ejecutar el script *coordinator.py*.
+
+- **Carpeta data:**
+  - *coordinator.py:* Script que implementa  
+
+- **Carpeta databases:**
+  - *coordinator.py:* Script que implementa  
+
+- **Carpeta dfs:**
+  - *coordinator.py:* Script que implementa
+  - *crossref.py:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
+  - *wiki.py:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida.
+
 - **Carpeta docker-configuration:**
   - *docker-compose.yml.template:* Template del Docker Compose utilizado para generar el archivo de configuración.
   - *docker_compose_configuration.py:* Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes, junto a otras asignaciones automatizadas.
@@ -57,24 +69,16 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
   - *.env:* Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT, personalizables por usuario.
   - *env_vars.txt:* Archivo de texto donde se encuentran las API keys (una en cada línea), asegurando un worker por cada key.
 
+- **Carpeta merger:**
+  - *coordinator.py:* Script que implementa
+
+- **Carpeta spark:**
+  - *coordinator.py:* Script que implementa 
+
 - **Carpeta worker:**
   - *worker.py:* Script encargado de la extracción de datos desde la API.
   - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
   - *Dockerfile:* Dockerfile que construye la imagen responsable de ejecutar *worker.py* e instala las librerías especificadas en requirements.txt.
-
-- **Carpeta wiki:**
-  - *wiki.py:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida. 
-  - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
-  - *Dockerfile:* Dockerfile que construye la imagen que descarga y ejecuta *wait-for-it.sh*, un script Bash que implementa la espera a que el host y el puerto 1234 (abierto mediante el coordinador) estén disponibles para continuar con la ejecución de este microservicio. Además, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *wiki.py*.
-
-- **Carpeta crossref:**
-  - *crossref.py:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
-  - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
-  -  *Dockerfile:* Dockerfile que construye la imagen que descarga y ejecuta *wait-for-it.sh*, un script Bash que implementa la espera a que el host y el puerto 1234 (abierto mediante el coordinador) estén disponibles para continuar con la ejecución de este microservicio. Además, instala las librerías necesarias especificadas en el fichero requirements.txt y ejecuta el script *crossref.py*.
-
-- **Carpeta coordinator:**
-  - *coordinator.py:* Script que implementa un servidor TCP que espera a recibir mensajes de los contenedores de los workers y una vez que ha recibido tantos mensajes como workers activa el puerto 1234 en el que se ejecutarán los servicios wiki y crossref.
-  - *Dockerfile:* Dockerfile que construye la imagen encargada de ejecutar el script *coordinator.py*.
 
 ### Explicación de Componentes
 
