@@ -3,6 +3,7 @@ services:
     neo4j:
         hostname: neo4j
         image: neo4j:4.4.17-community
+        container_name: neo4j
         environment:
             - NEO4J_dbms_mode=SINGLE
             - NEO4J_dbms_connector_bolt_advertised__address=localhost:7687
@@ -11,41 +12,39 @@ services:
             - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
             - NEO4J_dbms_routing_listen__address=0.0.0.0:7688
             - NEO4J_AUTH=neo4j/password
+            - NEO4J_dbms_security_allow_csv_import_from_file_urls=true
             - NEO4JLABS_PLUGINS=["graph-data-science"]
         ports:
             - 7474:7474
             - 7473:7473
             - 7687:7687
+        volumes:
+            - ../dfs/dataout:/var/lib/neo4j/import
     mysql:
         image: mysql:8.0
-        container_name: mysql-db
+        container_name: mysql
         environment:
-        MYSQL_ROOT_PASSWORD: rootpassword
-        MYSQL_DATABASE: mydatabase
-        MYSQL_USER: user
-        MYSQL_PASSWORD: password
+          - MYSQL_ROOT_PASSWORD= rootpassword
+          - MYSQL_DATABASE= mydatabase
+          - MYSQL_USER= user
+          - MYSQL_PASSWORD= password
         ports:
         - "3306:3306"
         volumes:
         - ./initdb:/docker-entrypoint-initdb.d
+        - ../dfs/dataout:/var/lib/mysql-files
 
     elasticsearch:
       image: elasticsearch:8.7.0
+      container_name: elasticsearch
       ports:
-        - 9200:9200      
+        - 9200:9200
+      networks:
+        - connection_network 
       environment:
         - discovery.type=single-node
-      #  - ES_JAVA_OPTS=-Xms1g -Xmx1g
         - xpack.security.enabled=false
-      #volumes:
-      #  - ./es-data:/usr/share/elasticsearch/data
-
-
-    # jupyter:
-    #  image: jupyter/minimal-notebook
-    #  ports:
-    #    - 8888:8888
-    #  #volumes:
-    #  #  - "./notebooks:/home/jovyan/work/notebooks"
-    #  command: ["start-notebook.sh","--NotebookApp.token=''","--NotebookApp.password=''"]
-    # si lo montamos ahora no podremos proque spark lo está utilizando, tenemos que buscar otro mapeo o cerrar ese contenedor
+networks:
+  connection_network:
+    external: true
+    name: connection_network

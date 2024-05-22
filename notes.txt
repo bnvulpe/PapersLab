@@ -16,29 +16,9 @@ When comparing Hadoop MapReduce with Apache Spark for tasks like enriching .json
 
 While it's possible to accomplish tasks like enriching .json files with sentiment analysis scores using Hadoop MapReduce, Apache Spark generally offers a more efficient, developer-friendly, and feature-rich platform for such tasks. Spark's higher-level abstractions, in-memory processing, and comprehensive ecosystem make it a preferred choice for many data processing and analytics use cases, including data enrichment and transformation. Therefore, for tasks like the one you described, using Apache Spark is likely to be easier and more productive compared to Hadoop MapReduce.
 
-Como están las carpetas antes de ejecutar:
-- coordinator: coordinator.py, Dockerfile
-- data: info.md 
-- dfs: info.md, text_classification.ipynb
-- docker-configuration: .env, docker_compose_configuration, docker-compose.yml.template, Dockerfile, env_vars
-- merger: Dockerfile, merge.py
-- spark: docker-compose, Dockerfile.worker
-- worker: Dockerfile, worker.py, requirements
- 
-Afuera: LICENSE, notes, README, Repository
 --------------------------------------------------------------------
 en bash:
 
-'''
-you may need
-
-cd PapersLab
-cd docker-configuration
-$PWD_PARENT = Split-Path -Parent $PWD
-$env:PWD_PARENT = $PWD_PARENT
-
-then you continue on step 2
-'''
 1. export PWD_PARENT=$(dirname "$(pwd)")
 
 2. docker build -t docker_configuration .
@@ -49,7 +29,7 @@ then you continue on step 2
 
 5. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
 
-	example: docker cp c2543cf66461:/app/docker-compose.yml $(dirname "$(pwd)")
+	example: docker cp 021ba1e7ee8d:/app/docker-compose.yml $(dirname "$(pwd)")
 
 6. cd ..
 
@@ -61,9 +41,13 @@ Una vez tenemos el archivo all_data.json en dfs folder
 
 1. cd ./spark
 2. ./build.sh
-2. docker-compose --env-file .env up --build --detach
+3. docker-compose --env-file .env up --build --detach
+4. una vez sacados todos los datos : docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{print $1}')
+5. cd .. y cd databases
+6. docker compose up -d (ahora mysql falla el import por el --secure file priv, arreglar)
 
 Para desmontar todo:
+en /databases: docker compose down 
 en /spark:  docker compose down
 cd ../docker-configuration
 docker compose down
@@ -73,55 +57,8 @@ y en docker borrar de:
 - images, build y volumes lo que sea dependiente de este proyecto
 
 Así está todo limpito en el ordenador :D
-------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
 
-bases de datos 
-cd ..
-cd databases
-docker compose up (neo4j buil in localhost:7474)
-
-----------------------------------------------------------------
-1. **Importing nodes:**
-```cypher
-LOAD CSV WITH HEADERS FROM 'file:///papers.csv' AS row
-CREATE (:Paper {id: row.id, theme: row.theme});
-```
-
-```cypher
-LOAD CSV WITH HEADERS FROM 'file:///authors.csv' AS row
-MERGE (:Author {name: row.author});
-```
-
-```cypher
-LOAD CSV WITH HEADERS FROM 'file:///publishers.csv' AS row
-CREATE (:Publisher {publisher: row.publisher, description: row.description});
-```
-
-2. **Importing relationships:**
-```cypher
-LOAD CSV WITH HEADERS FROM 'file:///posted_paper.csv' AS row
-MATCH (p:Paper {id: row.id})
-MATCH (a:Author {name: row.author})
-MERGE (a)-[:POSTED]->(p);
-```
-
-```cypher
-LOAD CSV WITH HEADERS FROM 'file:///posted_with.csv' AS row
-MATCH (a:Author {name: row.author})
-MATCH (pub:Publisher {publisher: row.publisher, description: row.description})
-MERGE (a)-[:POSTED_WITH]->(pub);
-```
-
-```cypher
-LOAD CSV WITH HEADERS FROM 'file:///published_with.csv' AS row
-MATCH (a1:Author {name: row.author_1})
-MATCH (a2:Author {name: row.author_2})
-MERGE (a1)-[:PUBLISHED_WITH]->(a2);
-```
-
-Make sure to replace `'file:///papers.csv'`, `'file:///authors.csv'`, etc., with the correct file paths where your CSV files are located. Also, ensure that the column names in the CSV files match the property names used in the Cypher queries.
-
----------------------------
 Elasticsearch
 Pros:
 

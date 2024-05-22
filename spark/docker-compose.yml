@@ -10,7 +10,10 @@ volumes:
 services:
   jupyterlab:
     image: jupyterlab
-    container_name: jupyterlab
+    container_name: jupyterlabdo
+    networks:
+      - connection_network
+#        ipv4_address: 172.20.0.10 # Assigning a static IP address
     ports:
       - 8889:8888
     volumes:
@@ -19,6 +22,8 @@ services:
   spark-master:
     image: spark-master
     container_name: spark-master
+    networks:
+      - connection_network
     ports:
       - 8080:8080
       - 7077:7077
@@ -29,6 +34,8 @@ services:
     environment:
       - SPARK_WORKER_CORES=1
       - SPARK_WORKER_MEMORY=1024m
+    networks:
+      - connection_network
     ports:
       - "0:4040"  # Allow Docker to dynamically allocate the host port for the worker UI
       - "0:18080"  # Allow Docker to dynamically allocate the host port for the history server
@@ -39,3 +46,7 @@ services:
     deploy:
       mode: replicated
       replicas: ${SPARK_WORKER_REPLICAS}
+networks:
+  connection_network:
+    driver: bridge
+    name: connection_network

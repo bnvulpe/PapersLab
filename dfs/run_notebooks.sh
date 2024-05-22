@@ -14,4 +14,6 @@ done
 
 # Wait for all background processes to finish
 wait
-jupyter nbconvert --execute --to notebook --inplace "/opt/workspace/"graph.ipynb""
+jupyter nbconvert --execute --to notebook --inplace "/opt/workspace/"graph.ipynb"" &
+wait
+jupyter nbconvert --execute --to notebook --inplace "/opt/workspace/"renaming.ipynb"" &
