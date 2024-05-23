@@ -30,7 +30,7 @@ en bash:
 5. cd ..
 
 6. docker-compose up --build --detach
-
+(Si la api esta en mantenimiento hacer docker compose down)
 -------------------------------------------------------------------------------------
 
 Una vez tenemos el archivo all_data.json en dfs folder
@@ -45,15 +45,7 @@ Una vez tenemos el archivo all_data.json en dfs folder
 Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), ya podemos usar jupyter desde localhost:8889 para hacer queries a Elasticsearch :D
 
 Para desmontar todo:
-en /databases: docker compose down 
-en /spark:  docker compose down
-docker compose down en raíz 
-
-y en docker borrar de:
-- contenedores docker_configuration
-- images, build y volumes lo que sea dependiente de este proyecto
-
-Así está todo limpito en el ordenador :D
+en raiz ejecutar ./teardown.sh
 ----------------------------------------------------------------------------------------
 
 Elasticsearch
