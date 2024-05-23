@@ -1,30 +1,5 @@
 # PapersLab: Extracción, Procesamiento y Análisis de Papers Públicos
 
-## Tabla de Contenidos
-
-1. [Acerca de](#acerca-de)
-2. [Infraestructura](#infraestructura)
-   - [Microservicios de Extracción de Datos](#microservicios-de-extracción-de-datos)
-     - [Estructura de Carpetas](#estructura-de-carpetas)
-   - [Explicación de Componentes](#explicación-de-componentes)
-     - [Servicio de Extracción de Datos (Worker)](#servicio-de-extracción-de-datos-worker)
-     - [Almacenamiento de Datos en Volúmenes Docker](#almacenamiento-de-datos-en-volúmenes-docker)
-     - [Servicios de Bases de Datos (MongoDB y Neo4j)](#servicios-de-bases-de-datos-mongodb-y-neo4j)
-3. [Almacenamiento de Datos](#almacenamiento-de-datos)
-   - [Volumen Docker para Almacenamiento](#volumen-docker-para-almacenamiento)
-   - [Formato de Almacenamiento](#formato-de-almacenamiento)
-     - [Justificación del Uso de JSON y CSV](#justificación-del-uso-de-json-y-csv)
-4. [Garantía de Disponibilidad y Escalabilidad de los Datos](#garantía-de-disponibilidad-y-escalabilidad-de-los-datos)
-5. [Decisiones de Diseño y Calidad](#decisiones-de-diseño-y-calidad)
-   - [Eficiencia](#eficiencia)
-   - [Escalabilidad](#escalabilidad)
-   - [Fiabilidad](#fiabilidad)
-   - [Gestión de la Carga](#gestión-de-la-carga)
-6. [Alcance](#alcance)
-7. [Instalación](#instalación)
-8. [Uso](#uso)
-9. [Licencia](#licencia)
-
 ## Acerca de
 
 El proyecto tiene como objetivo ofrecer una conveniente estructura de datos sobre papers científicos y sus características específicas, proporcionando una estructura eficiente tanto para el procesamiento de datos como para su almacenamiento y análisis posterior, según las necesidades del cliente.
