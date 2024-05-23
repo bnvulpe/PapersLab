@@ -364,7 +364,7 @@ docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{
 
 6. docker compose up -d
 
-Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), en la dirección localhost:8889 ya encontraremos Elasticsearch para hacer las queries necesarias para el procesamiento y analisis de los datos a conveniencia. Para trabajar con Neo4j se deberá acceder a localhost:9200 y realizar los imports del archivo /
+Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), en la dirección localhost:8889 ya encontraremos Elasticsearch para hacer las queries necesarias para el procesamiento y analisis de los datos a conveniencia. Para trabajar con Neo4j se deberá acceder a localhost:7687, iniciar sesión con neo4j/password y realizar los imports del archivo /databases/init.txt
 
 ```
 Para desmontar todo en raiz ejecutar
