@@ -25,32 +25,29 @@ en bash:
 
 3. docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
 
-4. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+4. docker cp $(docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"):/app/docker-compose.yml $(dirname "$(pwd)")
 
-5. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml $(dirname "$(pwd)")
+5. cd ..
 
-	example: docker cp a234197174f6:/app/docker-compose.yml $(dirname "$(pwd)")
-
-6. cd ..
-
-7. docker-compose up --build --detach
+6. docker-compose up --build --detach
 
 -------------------------------------------------------------------------------------
 
 Una vez tenemos el archivo all_data.json en dfs folder
 
-1. cd ./spark
+1. cd spark
 2. ./build.sh
 3. docker-compose --env-file .env up --build --detach
-4. una vez sacados todos los datos : docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{print $1}')
-5. cd .. y cd databases
+4. una vez sacados todos los datos (avisa en logs el jupyter): docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{print $1}')
+(juntaré más tarde cuando sepamos que toda la creacion de archivos en spark está bien los pasos 3 y 4)
+5. cd ../databases
 6. docker compose up -d (ahora mysql falla el import por el --secure file priv, arreglar)
+Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), ya podemos usar jupyter desde localhost:8889 para hacer queries a Elasticsearch :D
 
 Para desmontar todo:
 en /databases: docker compose down 
 en /spark:  docker compose down
-cd ../docker-configuration
-docker compose down
+docker compose down en raíz 
 
 y en docker borrar de:
 - contenedores docker_configuration

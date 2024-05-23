@@ -42,28 +42,5 @@ services:
         target: /dfs
     command: ["./wait-for-it.sh", "coordinator:1234", "--timeout=0", "--", "python", "merge.py"]
 
-  # databases
-  #mongo:
-  #  image: mongo
-  #  volumes:
-  #    - ./data:/data  # Mount shared volume for MongoDB to access data
-  #  environment:
-  #    - MONGODB_URI=mongodb://mongo:27017/mydatabase  # MongoDB connection URI
-  # elasticsearch:
-  #    image: elasticsearch:8.7.0
-  #    ports:
-  #      - 9200:9200      
-  #    environment:
-  #      - discovery.type=single-node
-      #  - ES_JAVA_OPTS=-Xms1g -Xmx1g
-  #      - xpack.security.enabled=false
-      # volumes:
-      #  - ./data:/usr/share/elasticsearch/dat
-  #    mem_limit: 2g
-
-  #neo4j:
-  #  image: neo4j
-  #  environment:
-  #    - NEO4J_AUTH=neo4j/password  # Neo4j authentication
-
+  # databases built in another compose
 
