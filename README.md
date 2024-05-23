@@ -1,16 +1,4 @@
 # PapersLab: Extracción, Procesamiento y Análisis de Papers Públicos
-# Índice
-
-1. [Introducción](#introducción)
-2. [Almacenamiento de Datos](#almacenamiento-de-datos)
-   - [Volumen Docker para Almacenamiento](#volumen-docker-para-almacenamiento)
-   - [Formato de Almacenamiento](#formato-de-almacenamiento)
-     - [Justificación del Uso de JSON y CSV](#justificación-del-uso-de-json-y-csv)
-3. [Instalación](#instalación)
-4. [Uso](#uso)
-5. [Licencia](#licencia)
-
-# PapersLab: Extracción, Procesamiento y Análisis de Papers Públicos
 
 ## Tabla de Contenidos
 
