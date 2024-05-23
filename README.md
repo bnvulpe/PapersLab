@@ -32,6 +32,9 @@ El proyecto tiene como objetivo ofrecer una conveniente estructura de datos sobr
 
 ## Infraestructura
 
+###Esquema general de la Infraestructura
+![infrastructure_schema](https://github.com/bnvulpe/PapersLab/assets/77082096/c8ca5219-ba71-428f-9958-e1bc3b08df18)
+
 En esta sección, se identifican y describen los componentes clave de la infraestructura, incluyendo los servicios de contenedores a utilizar.
 
 ### Microservicios de Extracción de Datos
@@ -106,11 +109,16 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
   - *Integración con otros componentes:* Los volúmenes Docker proporcionan una capa de abstracción para los datos, lo que simplifica su integración con otros servicios, como las bases de datos Elasticsearch y Neo4j.
 
 - **Sistema de procesamiento distribuido(Spark):**
-  Para enriquecer la información recopilada de los papers científicos, se implementa un proceso utilizando Apache Spark. Los datos almacenados en los volúmenes Docker son accedidos por los nodos del clúster Spark, permitiendo un procesamiento distribuido y eficiente. 
-  - *Mejora en la Eficiencia del Sistema:* Al procesar los datos directamente desde los volúmenes Docker, se evita la necesidad de transferir grandes cantidades de datos a través de la red, lo que reduce la latencia y mejora el rendimiento general del sistema.
-  - *Integración con Otros Componentes:* Los datos enriquecidos pueden ser fácilmente integrados con otros componentes del sistema, como bases de datos Elasticsearch y Neo4j, aprovechando la capa de abstracción proporcionada por los volúmenes Docker.
+  Para enriquecer la información recopilada de los papers científicos, se implementa un proceso utilizando Apache Spark. Los datos almacenados en los volúmenes Docker son accedidos por los nodos del clúster Spark, permitiendo un procesamiento distribuido y eficiente.
 
-- **Servicios de Bases de Datos (Elasticsearch y Neo4j):** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
+  - *Escalabilidad:* Spark puede escalar fácilmente desde una sola máquina hasta miles de nodos, lo que le permite procesar grandes cantidades de datos de forma eficiente. Esta escalabilidad es esencial para manejar el elevado volumen de datos de artículos científicos y la información complementaria procedente de múltiples API.
+  - *Tolerancia a fallos:* Los conjuntos de datos distribuidos resistentes (RDD) y las API DataFrame de Spark proporcionan tolerancia a fallos integrada. Si un nodo falla durante el procesamiento, Spark puede volver a calcular los datos perdidos utilizando la información de linaje, lo que garantiza la fiabilidad de las tareas de procesamiento.
+  - *Rendimiento:* Al distribuir las tareas entre varios nodos, Spark puede realizar el procesamiento en paralelo, lo que reduce significativamente el tiempo necesario para la transformación y el análisis de los datos. Esto es crucial para cumplir los requisitos de rendimiento de las aplicaciones de big data. 
+
+  - *Mejora en la Eficiencia del Sistema:* Al procesar los datos directamente desde los volúmenes Docker, se evita la necesidad de transferir grandes cantidades de datos a través de la red, lo que reduce la latencia y mejora el rendimiento general del sistema.
+  - *Integración con Otros Componentes:* Los datos enriquecidos pueden ser fácilmente integrados con otros componentes del sistema, como bases de datos Elasticsearch, Neo4j y SQL aprovechando la capa de abstracción proporcionada por los volúmenes Docker.
+
+- **Servicios de Bases de Datos (Elasticsearch, Neo4j y SQL):** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
   - *Contribución al manejo eficiente de datos:* Las bases de datos Elasticsearch y Neo4j están diseñadas para manejar grandes volúmenes de datos de manera eficiente. Proporcionan capacidades de indexación, consultas optimizadas y almacenamiento escalable que facilitan el acceso y la manipulación de los datos de forma eficiente.
   - *Integración con otros componentes:* Los datos almacenados en los volúmenes Docker pueden ser fácilmente cargados en las bases de datos Elasticsearch y Neo4j para su análisis posterior. Estos servicios proporcionan interfaces de programación y consultas que permiten acceder a los datos de manera programática desde otros servicios, como Jupyter y Spark.
 
