@@ -1,0 +1,29 @@
+// init.cypher
+
+// Importing nodes:
+LOAD CSV WITH HEADERS FROM 'file:///papers/papers.csv' AS row
+CREATE (:Paper {id: row.id, theme: row.theme});
+
+LOAD CSV WITH HEADERS FROM 'file:///authors/authors.csv' AS row
+MERGE (:Author {name: row.author});
+
+LOAD CSV WITH HEADERS FROM 'file:///publishers/publishers.csv' AS row
+CREATE (:Publisher {publisher: row.publisher, description: row.description});
+
+// Importing relationships:
+LOAD CSV WITH HEADERS FROM 'file:///posted_paper/posted_paper.csv' AS row
+MATCH (p:Paper {id: row.id})
+MATCH (a:Author {name: row.author})
+MERGE (a)-[r:POSTED]->(p)
+ON CREATE SET r.publish_month = row.publish_month, r.day_of_week = row.day_of_week
+ON MATCH SET r.publish_month = row.publish_month, r.day_of_week = row.day_of_week;
+
+LOAD CSV WITH HEADERS FROM 'file:///posted_with/posted_with.csv' AS row
+MATCH (a:Author {name: row.author})
+MATCH (pub:Publisher {publisher: row.publisher, description: row.description})
+MERGE (a)-[:POSTED_WITH]->(pub);
+
+LOAD CSV WITH HEADERS FROM 'file:///published_with/published_with.csv' AS row
+MATCH (a1:Author {name: row.author_1})
+MATCH (a2:Author {name: row.author_2})
+MERGE (a1)-[:PUBLISHED_WITH]->(a2);
