@@ -54,13 +54,19 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
   - *coordinator.py:* Script que implementa  
 
 - **Carpeta databases:**
-  - *coordinator.py:* Script que implementa  
+  - *docker-compose.yml* levanta tres servicios: Neo4j, MySQL y Elasticsearch. Neo4j se configura en modo único, con autenticación, plugins, y puertos expuestos para interacción. MySQL se configura con credenciales de usuario, una base de datos específica, y expone el puerto estándar de MySQL.Conectando todos los servicios a una red externa llamada connection_network.
+  - *initbd/init.sql* carga datos desde archivos CSV en tres tablas temporales separadas. Luego, mediante consultas de inserción, transfiere esos datos a una tabla principal llamada papers, actualizando registros existentes si es necesario. Finalmente, elimina las tablas temporales y verifica que los datos se hayan insertado correctamente en la tabla papers.
 
 - **Carpeta dfs:**
-  - *coordinator.py:* Script que implementa
-  - *crossref.py:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
-  - *wiki.py:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida.
-
+  - *graph.ipynb:* script para procesar los datos utilizando PySpark. Realiza operaciones para unir, transformar y generar relaciones entre los datos de los documentos y los autores, y luego guarda esta información en archivos CSV para su posterior análisis. El script carga datos de archivos CSV y JSON, los une según identificadores únicos, crea relaciones entre documentos y autores, y extrae nodos individuales para documentos y autores. 
+  - *crossref_service.ipynb:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
+  - *wiki-publishers.ipynb:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida.
+  - *init_elasticdb.ipynb:* Script que se encarga de conectar con Elasticsearch, crear un índice si no existe y luego cargar datos desde un archivo JSON en Elasticsearch. Una vez cargados los datos, realiza una consulta de búsqueda simple para verificar la carga exitosa.
+  - *renaming.ipynb:* Este script renombra archivos CSV en función de sus ubicaciones actuales y los nuevos nombres proporcionados.
+  - *run_notebooks.sh:* Este script ejecuta varios cuadernos Jupyter en paralelo. Luego, ejecuta en segundo plano los cuadernos "text_classification.ipynb", "time_data.ipynb" y "wiki-publishers.ipynb" utilizando jupyter nbconvert. Después, espera a que todos los procesos en segundo plano finalicen y ejecuta los cuadernos adicionales, "graph.ipynb" y "renaming.ipynb".
+  - *text_classification.ipynb:* El script utiliza PySpark para leer datos de archivos JSON, luego llama a una API de Hugging Face para clasificar el contenido de cada documento. La clasificación se basa en el título del documento y utiliza un modelo específico de Hugging Face. El resultado de la clasificación se imprime y luego se guarda en un nuevo archivo CSV que contiene el ID del documento y el tema asignado por el modelo.
+  - *time_data.ipynb:* El script utiliza PySpark para leer datos JSON y extraer el mes y el día de la semana de las fechas de publicación de documentos. Luego, guarda esta información en un archivo CSV.
+    
 - **Carpeta docker-configuration:**
   - *docker-compose.yml.template:* Template del Docker Compose utilizado para generar el archivo de configuración.
   - *docker_compose_configuration.py:* Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes, junto a otras asignaciones automatizadas.
@@ -70,10 +76,19 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
   - *env_vars.txt:* Archivo de texto donde se encuentran las API keys (una en cada línea), asegurando un worker por cada key.
 
 - **Carpeta merger:**
-  - *coordinator.py:* Script que implementa
+  - *Dockerfile:* Script que prepara un entorno para ejecutar una aplicación Python, asegurándose de que las dependencias y utilidades necesarias estén disponibles.
+  - *merge.py:* Este script en Python combina múltiples archivos JSON en un único archivo JSON de salida.
 
 - **Carpeta spark:**
-  - *coordinator.py:* Script que implementa 
+  - *.env* Contiene la variable del entorno que determinará el numero de nodos de spark que tendrá el cluster montado
+  - *build.sh* El script prepara un entorno Dockerizado para ejecutar un clúster de Spark con soporte de JupyterLab.
+  - *cluster-base.Dockerfile* Este archivo Dockerfile crea una imagen de Docker basada en una versión ligera de Debian con Java Runtime Environment (JRE).
+  - *docker-compose.yml* Configura un entorno de clúster con servicios de JupyterLab, Spark Master y Spark Worker. Define un volumen compartido llamado shared-workspace para almacenar datos persistentes y compartir archivos entre los servicios.
+  - *jupyterlab.Dockerfile* El archivo prepara una imagen Docker para ejecutar JupyterLab en un entorno de clúster con soporte para Spark y otras bibliotecas necesarias.
+  - *spark-base.Dockerfile* El archivo prepara una imagen Docker para ejecutar Apache Spark en un entorno de clúster.
+  - *spark-defaults.conf* Estas configuraciones optimizan la gestión de eventos y registros en un entorno de Spark, mientras también establecen un límite en el número máximo de núcleos que pueden utilizarse.
+  - *spark-master.Dockerfile* Extiende una imagen base de Spark para configurar un entorno que incluye herramientas adicionales y personalizaciones.
+  - *spark-worker.Dockerfile* Extiende una imagen base de Spark para configurar un entorno de trabajador de Spark.
 
 - **Carpeta worker:**
   - *worker.py:* Script encargado de la extracción de datos desde la API.
@@ -89,6 +104,11 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
 - **Almacenamiento de Datos en Volúmenes Docker:** Los datos extraídos por los workers se almacenan en volúmenes Docker para facilitar su acceso desde otros servicios y garantizar su persistencia a lo largo del tiempo.
   - *Contribución al manejo eficiente de datos:* Almacenar los datos en volúmenes Docker permite un acceso rápido y eficiente a los mismos desde cualquier componente del sistema. Esto reduce la latencia y mejora el rendimiento en comparación con el almacenamiento en sistemas de archivos externos o bases de datos.
   - *Integración con otros componentes:* Los volúmenes Docker proporcionan una capa de abstracción para los datos, lo que simplifica su integración con otros servicios, como las bases de datos Elasticsearch y Neo4j.
+
+- **Sistema de procesamiento distribuido(Spark):**
+  Para enriquecer la información recopilada de los papers científicos, se implementa un proceso utilizando Apache Spark. Los datos almacenados en los volúmenes Docker son accedidos por los nodos del clúster Spark, permitiendo un procesamiento distribuido y eficiente. 
+  - *Mejora en la Eficiencia del Sistema:* Al procesar los datos directamente desde los volúmenes Docker, se evita la necesidad de transferir grandes cantidades de datos a través de la red, lo que reduce la latencia y mejora el rendimiento general del sistema.
+  - *Integración con Otros Componentes:* Los datos enriquecidos pueden ser fácilmente integrados con otros componentes del sistema, como bases de datos Elasticsearch y Neo4j, aprovechando la capa de abstracción proporcionada por los volúmenes Docker.
 
 - **Servicios de Bases de Datos (Elasticsearch y Neo4j):** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
   - *Contribución al manejo eficiente de datos:* Las bases de datos Elasticsearch y Neo4j están diseñadas para manejar grandes volúmenes de datos de manera eficiente. Proporcionan capacidades de indexación, consultas optimizadas y almacenamiento escalable que facilitan el acceso y la manipulación de los datos de forma eficiente.
