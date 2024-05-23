@@ -32,7 +32,7 @@ services:
         - "3306:3306"
         volumes:
         - ./initdb:/docker-entrypoint-initdb.d
-        - ../dfs/dataout:/var/lib/mysql-files
+        - ../dfs/tabular:/var/lib/mysql-files
 
     elasticsearch:
       image: elasticsearch:8.7.0
