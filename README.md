@@ -312,9 +312,7 @@ El alcance del proyecto abarca varias etapas y tecnologías, diseñadas para cre
 
 ## Instalación
 
-Para comenzar con este proyecto, puedes descargarlo desde el repositorio de GitHub. Puedes hacerlo haciendo clic en el botón "Code" y luego seleccionando "Download ZIP". Una vez descargado, extrae el contenido del archivo ZIP en la ubicación deseada.
-
-Alternativamente, puedes clonar el repositorio usando Git. Abre tu terminal o símbolo del sistema y ejecuta el siguiente comando:
+Clona el repositorio usando Git. Abre tu terminal o símbolo del sistema y ejecuta el siguiente comando:
 
 ```bash
 git clone https://github.com/bnvulpe/PapersLab.git --config core.autocrlf=false
