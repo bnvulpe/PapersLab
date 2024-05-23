@@ -50,9 +50,9 @@ En esta sección, se identifican y describen los componentes clave de la infraes
 
 ### Microservicios de Extracción de Datos
 
-La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples claves API. Consiste en cuatro workers, cada uno asociado a una clave API específica de los miembros del grupo. Además de estos workers, se implementó un servicio adicional para la fusión de los datos extraídos por cada worker, de manera que finalicemos la etapa de extracción con un único archivo en formato JSON que contenga toda la información recabada.
+La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples claves API. Consiste en cuatro workers, cada uno asociado a una clave API específica de los miembros del grupo. Además de estos workers, se implementó un servicio adicional para la fusión de los datos extraídos por cada worker, de manera que finalicemos la etapa de extracción con un único archivo en formato JSON que contenga toda la información.
 
-Además, se implementa un volumen de Docker llamado "data" para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
+Además, se implementa un volumen de Docker para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
 
 - **Neo4j:** se trata de una base de datos de grafos que es ideal para modelar y representar relaciones complejas entre entidades, como los autores de los papers, las citas entre papers y las conexiones entre conceptos científicos. Al aprovechar la capacidad de Neo4j para almacenar datos en forma de grafos, pueden modelar fácilmente las relaciones entre los distintos atributos. Esto permite consultas eficientes para descubrir patrones y relaciones entre los datos.
 
@@ -63,17 +63,14 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
 - **Carpeta coordinator:**
   - *coordinator.py:* Script que implementa un servidor TCP que espera a recibir mensajes de los contenedores de los workers y una vez que ha recibido tantos mensajes como workers activa el puerto 1234 en el que se ejecutarán los servicios wiki y crossref.
   - *Dockerfile:* Dockerfile que construye la imagen encargada de ejecutar el script *coordinator.py*.
-
-- **Carpeta data:**
-  - *coordinator.py:* Script que implementa  
-
+    
 - **Carpeta databases:**
-  - *docker-compose.yml* levanta tres servicios: Neo4j, MySQL y Elasticsearch. Neo4j se configura en modo único, con autenticación, plugins, y puertos expuestos para interacción. MySQL se configura con credenciales de usuario, una base de datos específica, y expone el puerto estándar de MySQL.Conectando todos los servicios a una red externa llamada connection_network.
+  - *docker-compose.yml* levanta tres servicios: Neo4j, MySQL y Elasticsearch. Neo4j se configura en modo único, con autenticación, plugins, y puertos expuestos para interacción. MySQL se configura con credenciales de usuario, una base de datos específica, y expone el puerto estándar de MySQL.
   - *initbd/init.sql* carga datos desde archivos CSV en tres tablas temporales separadas. Luego, mediante consultas de inserción, transfiere esos datos a una tabla principal llamada papers, actualizando registros existentes si es necesario. Finalmente, elimina las tablas temporales y verifica que los datos se hayan insertado correctamente en la tabla papers.
 
 - **Carpeta dfs:**
   - *graph.ipynb:* script para procesar los datos utilizando PySpark. Realiza operaciones para unir, transformar y generar relaciones entre los datos de los documentos y los autores, y luego guarda esta información en archivos CSV para su posterior análisis. El script carga datos de archivos CSV y JSON, los une según identificadores únicos, crea relaciones entre documentos y autores, y extrae nodos individuales para documentos y autores. 
-  - *crossref_service.ipynb:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente.
+  - *crossref_service.ipynb:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente. Por el tiempo de ejecución no se ejecuta en el workflow final.
   - *wiki-publishers.ipynb:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida.
   - *init_elasticdb.ipynb:* Script que se encarga de conectar con Elasticsearch, crear un índice si no existe y luego cargar datos desde un archivo JSON en Elasticsearch. Una vez cargados los datos, realiza una consulta de búsqueda simple para verificar la carga exitosa.
   - *renaming.ipynb:* Este script renombra archivos CSV en función de sus ubicaciones actuales y los nuevos nombres proporcionados.
@@ -113,7 +110,7 @@ Además, se implementa un volumen de Docker llamado "data" para almacenar los da
 
 - **Servicio de Extracción de Datos (Worker):** Este microservicio se encarga de la extracción de datos desde una API dada utilizando un conjunto de API keys. Su función principal es recolectar los datos necesarios de manera eficiente y confiable. 
   - *Contribución al manejo eficiente de datos:* El uso de varios workers distribuye la carga de trabajo y acelera el proceso de extracción de datos al paralelizar las solicitudes a la API. Esto optimiza el rendimiento y garantiza una extracción rápida y efectiva de grandes volúmenes de datos.
-  - *Integración con otros componentes:* Los datos extraídos por cada worker se almacenan en un volumen Docker compartido, lo que permite un acceso uniforme a los datos desde otros componentes del sistema, como las bases de datos Elasticsearch y Neo4j.
+  - *Integración con otros componentes:* Los datos extraídos por cada worker se almacenan en un volumen Docker compartido, lo que permite un acceso uniforme a los datos desde otros componentes del sistema, como las bases de datos Elasticsearch, MySQL y Neo4j.
 
 - **Servicio de Coordinador:**  Este microservicio actúa como un orquestador, asegurando que los servicios se ejecuten en el orden adecuado y proporcionando una señal para habilitar la ejecución de servicios subsiguientes (wiki y crossref) una vez que los workers han completado su tarea.
   - *Contribución al manejo eficiente de datos:* El servicio de coordinador garantiza un flujo eficiente de trabajo al asegurar que los diferentes servicios se ejecuten en el orden correcto, minimizando el tiempo de inactividad y maximizando la utilización de los recursos disponibles. Asimismo, permite una gestión eficiente de los datos al controlar la secuencia de ejecución de los servicios, lo que asegura que los datos se procesen y enriquezcan de manera oportuna y coherente.
@@ -306,11 +303,6 @@ El alcance del proyecto abarca varias etapas y tecnologías, diseñadas para cre
 - **Escalabilidad Horizontal**: Capacidad de añadir más Docker workers y nodos Spark para manejar mayores volúmenes de datos o incrementar la velocidad de procesamiento según sea necesario.
 - **Modularidad**: Diseño modular que permite la integración de nuevas fuentes de datos y la ampliación de funcionalidades sin afectar el núcleo del sistema.
 
-### Seguridad y Cumplimiento
-
-- **Control de Acceso**: Implementación de políticas de control de acceso para asegurar que solo usuarios autorizados puedan acceder y manipular los datos.
-- **Protección de Datos**: Uso de técnicas de encriptación y otras medidas de seguridad para proteger los datos en tránsito y en reposo, garantizando el cumplimiento de normativas de privacidad y seguridad.
-
 #### Objetivos Específicos
 
 - **Recolección de Datos Científicos**: Obtener datos detallados y actualizados de artículos científicos desde diversas fuentes API.
@@ -336,18 +328,16 @@ Una vez ubicado en la carpeta docker-configuration:
 cd docker-configuration
 ```
 
-Para POWERSHELL de Windows:
+Para GIT BASH:
 ```bash
 
-1. docker build -t docker_configuration .
+1. export PWD_PARENT=$(dirname "$(pwd)")
 
-2. $env:PWD_PARENT = (get-item -Path ".\").Parent.FullName;docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
+2. docker build -t docker_configuration .
 
-3. docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"
+3. docker run -d --name docker_configuration -v PWD_PARENT:/app/project docker_configuration
 
-4. Utilice el output ID delpaso anterior : docker cp ID:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
-
-	example: docker cp eff65bf855b9:/app/docker-compose.yml (Get-Item -Path ".\").Parent.FullName
+4. docker cp $(docker ps -a --filter "name=docker_configuration" --format "{{.ID}}"):/app/docker-compose.yml $(dirname "$(pwd)")
 
 5. cd ..
 
@@ -374,7 +364,7 @@ docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{
 
 6. docker compose up -d
 
-Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), en la dirección localhost:8889 ya encontraremos Elasticsearch para hacer las queries necesarias para el procesamiento y analisis de los datos a conveniencia
+Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), en la dirección localhost:8889 ya encontraremos Elasticsearch para hacer las queries necesarias para el procesamiento y analisis de los datos a conveniencia. Para trabajar con Neo4j se deberá acceder a localhost:9200 y realizar los imports del archivo /
 
 ```
 Para desmontar todo en raiz ejecutar
