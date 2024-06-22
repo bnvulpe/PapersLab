@@ -111,11 +111,12 @@ def main():
 
     scroll_id = None
     limit = int(os.getenv('CALL_LIMIT', '5'))
+    query_limit = 5
     for i in range(limit): # amount of calls to the API per worker mentioned in the environment variable CALL_LIMIT
         while True:
             try:
                 query = f"yearPublished>={begin_year} AND yearPublished<={end_year}"
-                results, _ = query_api("search/works", query, key, is_scroll=True, limit=50, scrollId=scroll_id)
+                results, _ = query_api("search/works", query, key, is_scroll=True, limit=query_limit, scrollId=scroll_id)
                 if 'scrollId' in results:
                     scroll_id = results['scrollId']  # save the scrollId for the next call
                 

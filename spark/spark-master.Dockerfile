@@ -1,4 +1,4 @@
-FROM spark-base
+FROM cluster-base
 
 RUN sed -i 's|http://deb.debian.org/debian|http://ftp.us.debian.org/debian|g' /etc/apt/sources.list && \
     apt-get update -y || (sleep 30 && apt-get update -y) || (sleep 60 && apt-get update -y) && \

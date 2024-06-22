@@ -304,7 +304,7 @@ Para GIT BASH:
 
 6. docker-compose up --build --detach
 
-7. Una vez el servicio crossref haya finalizado su ejecución: docker-compose stop 
+7. docker-compose stop
 ```
 
 Una vez verificamos que el archivo all_data.json en dfs folder

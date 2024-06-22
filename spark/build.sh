@@ -1,18 +1,12 @@
-SPARK_VERSION="2.4.5"
-HADOOP_VERSION="2.7"
-JUPYTERLAB_VERSION="2.1.5"
+SPARK_VERSION="3.4.0"
+HADOOP_VERSION="3"
+JUPYTERLAB_VERSION="3.4.8"
 
 # -- Building the Images
 
 docker build \
   -f cluster-base.Dockerfile \
   -t cluster-base .
-
-docker build \
-  --build-arg spark_version="${SPARK_VERSION}" \
-  --build-arg hadoop_version="${HADOOP_VERSION}" \
-  -f spark-base.Dockerfile \
-  -t spark-base .
 
 docker build \
   -f spark-master.Dockerfile \
