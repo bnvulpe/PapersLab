@@ -1,6 +1,6 @@
 SHOW VARIABLES LIKE "secure_file_priv";
 
--- Creamos la tabla a poblar `papers` 
+-- Create the table to be populated `papers` 
 CREATE TABLE IF NOT EXISTS papers (
     id INT PRIMARY KEY,
     theme VARCHAR(255),
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS papers (
     publisher VARCHAR(255),
     publisher_description TEXT
 );
--- Creamos las tablas temporales para importar los datos de cada .csv independiente
+-- Create temporary tables to import data form each individual .csv file
 CREATE TEMPORARY TABLE temp_papers_theme (
     id INT PRIMARY KEY,
     theme VARCHAR(255)
@@ -27,7 +27,7 @@ CREATE TEMPORARY TABLE temp_papers_publisher (
     publisher_description TEXT
 );
 
--- Poblamos las tablas temporales
+-- Populate the temporary tables
 
 LOAD DATA INFILE '/var/lib/mysql-files/paper_theme/paper_theme.csv'
 INTO TABLE temp_papers_theme
@@ -53,7 +53,7 @@ LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
 (id, publisher, publisher_description);
 
--- Insertamos los datos en la tabla `papers` a partir de las tablas temporales
+-- Insert data to table `papers` from the temporary tables
 INSERT INTO papers (id, theme)
 SELECT id, theme FROM temp_papers_theme
 ON DUPLICATE KEY UPDATE theme = VALUES(theme);
@@ -70,11 +70,11 @@ ON DUPLICATE KEY UPDATE
     publisher = VALUES(publisher),
     publisher_description = VALUES(publisher_description);
 
--- Eliminamos las tablas temporales
+-- Delete the temporary tables
 DROP TEMPORARY TABLE temp_papers_theme;
 DROP TEMPORARY TABLE temp_papers_posted;
 DROP TEMPORARY TABLE temp_papers_publisher;
 
--- Comprobamos que los datos se han insertado correctamente
+-- Show the data in the table `papers` to verify the data was imported
 SELECT * FROM papers;
 
