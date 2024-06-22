@@ -1,295 +1,219 @@
-# PapersLab: Extracción, Procesamiento y Análisis de Papers Públicos
+# PapersLab: Extraction, Processing and Analysis of Public Papers
 
-## Acerca de
+## About
 
-El proyecto tiene como objetivo ofrecer una conveniente estructura de datos sobre papers científicos y sus características específicas, proporcionando una estructura eficiente tanto para el procesamiento de datos como para su almacenamiento y análisis posterior, según las necesidades del cliente.
+The project aims to offer a convenient data structure on scientific papers and their specific characteristics, providing an efficient structure for both data processing and subsequent storage and analysis, according to the client's needs.
 
-## Infraestructura
+#### Objectives
 
-###Esquema general de la Infraestructura
+- **Scientific Data Collection**: Obtain detailed and updated scientific article data from various API sources.
+- **Information Enrichment**: Add relevant metadata to scientific articles, improving the quality and usefulness of the dataset.
+- **Efficient Storage**: Use specialized databases to optimally store and manage data.
+- **Analysis Facilitation**: Provide tools and environments that facilitate advanced data analysis by researchers and data scientists.
+
+## Infraestructure
+
+###General outline of the Infrastructure
 ![infrastructure_schema](https://github.com/bnvulpe/PapersLab/assets/77082096/c8ca5219-ba71-428f-9958-e1bc3b08df18)
 
-En esta sección, se identifican y describen los componentes clave de la infraestructura, incluyendo los servicios de contenedores a utilizar.
+This section identifies and describes the key components of the infrastructure, including the container services to be used.
 
-### Microservicios de Extracción de Datos
+### Microservices
 
-La infraestructura se basa en microservicios diseñados para la extracción eficiente de datos de papers científicos utilizando múltiples claves API. Consiste en cuatro workers, cada uno asociado a una clave API específica de los miembros del grupo. Además de estos workers, se implementó un servicio adicional para la fusión de los datos extraídos por cada worker, de manera que finalicemos la etapa de extracción con un único archivo en formato JSON que contenga toda la información.
+The infrastructure is based on microservices designed for the efficient extraction of data from scientific papers using multiple API keys. An additional service was implemented to merge the data extracted by each worker, so that we end the extraction stage with a single JSON file containing all the information.
 
-Además, se implementa un volumen de Docker para almacenar los datos descargados, lo que facilita su posterior almacenamiento, tratamiento y manipulación en las siguientes etapas del proyecto (en diferentes servicios de almacenamiento y tratamiento de datos como Neo4j y Elasticsearch). La razón detrás la elección de estos servicios se fundamenta en los siguientes puntos:
+In addition, a Docker volume is implemented to store the downloaded data, which facilitates its subsequent storage, processing and manipulation in the following stages of the project (in different data storage and processing services such as Neo4j and Elasticsearch). The reason behind the choice of these services is based on the following points:
 
-- **Neo4j:** se trata de una base de datos de grafos que es ideal para modelar y representar relaciones complejas entre entidades, como los autores de los papers, las citas entre papers y las conexiones entre conceptos científicos. Al aprovechar la capacidad de Neo4j para almacenar datos en forma de grafos, pueden modelar fácilmente las relaciones entre los distintos atributos. Esto permite consultas eficientes para descubrir patrones y relaciones entre los datos.
+- **Neo4j:** is a graph database that is ideal for modeling and representing complex relationships between entities, such as authors of papers, citations between papers, and connections between scientific concepts. By taking advantage of Neo4j's ability to store data in the form of graphs, they can easily model relationships between attributes. This enables efficient queries to discover patterns and relationships between data.
 
-- **Elasticsearch:** motor de búsqueda que puede ser utilizado para indexar y buscar los contenidos de los papers científicos, así como también para almacenar y consultar la información obtenida. Elasticsearch ofrece capacidades avanzadas de búsqueda de texto completo, agregaciones, análisis de datos y visualización, lo que facilita la extracción de información significativa de grandes conjuntos de datos no estructurados. Además, Elasticsearch es altamente escalable y tolerante a fallos, lo que lo hace adecuado para manejar grandes volúmenes de datos y cargas de trabajo distribuidas.
+- **Elasticsearch:** search engine that can be used to index and search the contents of scientific papers, as well as to store and query the information obtained. Elasticsearch offers advanced full-text search, aggregation, data analysis and visualization capabilities, making it easy to extract meaningful information from large unstructured datasets. In addition, Elasticsearch is highly scalable and fault-tolerant, making it suitable for handling large data volumes and distributed workloads.
 
-#### Estructura de Carpetas:
+- **MySQL:** is a widely-used relational database management system (RDBMS) that stores and manages the structured data of scientific papers, enabling fast querying of temporal and thematic data. Its high performance, scalability, and ease of use make it ideal for handling large datasets and supporting concurrent access by multiple users in a distributed environment.
 
-- **Carpeta coordinator:**
-  - *coordinator.py:* Script que implementa un servidor TCP que espera a recibir mensajes de los contenedores de los workers y una vez que ha recibido tantos mensajes como workers activa el puerto 1234 en el que se ejecutarán los servicios wiki y crossref.
-  - *Dockerfile:* Dockerfile que construye la imagen encargada de ejecutar el script *coordinator.py*.
+### Folder contents:
+
+- **coordinator:**
+  - *coordinator.py:* script that implements a TCP server that waits to receive messages from the workers' containers and once it has received as many messages as workers it activates port 1234 to start the 'merge' service process.
+  - *Dockerfile:* Dockerfile that builds the image in charge of executing the script *coordinator.py*.
     
-- **Carpeta databases:**
-  - *docker-compose.yml* levanta tres servicios: Neo4j, MySQL y Elasticsearch. Neo4j se configura en modo único, con autenticación, plugins, y puertos expuestos para interacción. MySQL se configura con credenciales de usuario, una base de datos específica, y expone el puerto estándar de MySQL.
-  - *initbd/init.sql* carga datos desde archivos CSV en tres tablas temporales separadas. Luego, mediante consultas de inserción, transfiere esos datos a una tabla principal llamada papers, actualizando registros existentes si es necesario. Finalmente, elimina las tablas temporales y verifica que los datos se hayan insertado correctamente en la tabla papers.
+- **databases:**
+  - *docker-compose.yml* builds three services: Neo4j, MySQL and Elasticsearch. Neo4j is configured in single mode, with authentication, plugins, and ports exposed for interaction. MySQL is configured with user credentials, a specific database, and exposes the standard MySQL port.
+  - *initbd/init.sql* loads data from CSV files into three separate temporary tables. Then, using insert queries, it transfers that data to a main table called papers, updating existing records if necessary. Finally, it deletes the temporary tables and verifies that the data has been correctly inserted into the papers table.
+  - *init.txt* file given to import the nodes and relationships to Neo4j.
 
-- **Carpeta dfs:**
-  - *graph.ipynb:* script para procesar los datos utilizando PySpark. Realiza operaciones para unir, transformar y generar relaciones entre los datos de los documentos y los autores, y luego guarda esta información en archivos CSV para su posterior análisis. El script carga datos de archivos CSV y JSON, los une según identificadores únicos, crea relaciones entre documentos y autores, y extrae nodos individuales para documentos y autores. 
-  - *crossref_service.ipynb:* Script que toma la información de un paper en formato JSON, extrae el nombre del publisher y realiza una búsqueda en la API Crossref para obtener su localización. Luego, añade estos datos, incluyendo el título original del paper y la localización del publisher, a un archivo CSV. Este proceso se realiza de forma asíncrona para manejar múltiples papers de manera eficiente. Además, aprovecha el módulo concurrent.futures.ThreadPoolExecutor para procesar los papers de forma concurrente. Por el tiempo de ejecución no se ejecuta en el workflow final.
-  - *wiki-publishers.ipynb:* Script encargado de hacerla limpieza de los autores a partir de los ficheros JSON extraídos por los workers, acceder a la API de Wiki y guardar en un fichero CSV la información obtenida.
-  - *init_elasticdb.ipynb:* Script que se encarga de conectar con Elasticsearch, crear un índice si no existe y luego cargar datos desde un archivo JSON en Elasticsearch. Una vez cargados los datos, realiza una consulta de búsqueda simple para verificar la carga exitosa.
-  - *renaming.ipynb:* Este script renombra archivos CSV en función de sus ubicaciones actuales y los nuevos nombres proporcionados.
-  - *run_notebooks.sh:* Este script ejecuta varios cuadernos Jupyter en paralelo. Luego, ejecuta en segundo plano los cuadernos "text_classification.ipynb", "time_data.ipynb" y "wiki-publishers.ipynb" utilizando jupyter nbconvert. Después, espera a que todos los procesos en segundo plano finalicen y ejecuta los cuadernos adicionales, "graph.ipynb" y "renaming.ipynb".
-  - *text_classification.ipynb:* El script utiliza PySpark para leer datos de archivos JSON, luego llama a una API de Hugging Face para clasificar el contenido de cada documento. La clasificación se basa en el título del documento y utiliza un modelo específico de Hugging Face. El resultado de la clasificación se imprime y luego se guarda en un nuevo archivo CSV que contiene el ID del documento y el tema asignado por el modelo.
-  - *time_data.ipynb:* El script utiliza PySpark para leer datos JSON y extraer el mes y el día de la semana de las fechas de publicación de documentos. Luego, guarda esta información en un archivo CSV.
+- **dfs:**
+  - *graph.ipynb:* script to process the data using PySpark. It performs operations to join, transform, and generate relationships between document and author data, and then saves this information to CSV files for further analysis. The script loads data from CSV and JSON files, joins them according to unique identifiers, creates relationships between documents and authors, and extracts individual nodes for documents and authors. 
+  - *crossref_service.ipynb:* script that takes information from a paper in JSON format, extracts the name of the publisher and performs a Crossref API search to get its location. It then appends this data, including the original paper title and publisher location, to a CSV file. This process is performed asynchronously to handle multiple papers efficiently. In addition, it takes advantage of the concurrent.futures.ThreadPoolExecutor module to process the papers concurrently. Because of the runtime it is not executed in the final workflow.
+  - *wiki-publishers.ipynb:* script in charge of cleaning the authors from the JSON files extracted by the workers, accessing the Wiki API and saving the information obtained in a CSV file.
+  - *init_elasticdb.ipynb:* takes care of connecting to Elasticsearch, creating an index if it doesn't exist and then loading data from a JSON file into Elasticsearch. Once the data is loaded, it performs a simple search query to verify successful load.
+  - *renaming.ipynb:* renames CSV files based on their current locations and the new names provided.
+  - *run_notebooks.sh:* runs several Jupyter notebooks in parallel. It then runs the "text_classification.ipynb", "time_data.ipynb" and "wiki-publishers.ipynb" notebooks in the background using jupyter nbconvert. Then waits for all background processes to finish and run the additional notebooks, "graph.ipynb" and "renaming.ipynb".
+  - *text_classification.ipynb:* The script uses PySpark to read data from JSON files, then calls a Hugging Face API to classify the content of each document. The classification is based on the document title and uses a specific Hugging Face model. The classification result is printed and then saved to a new CSV file containing the document ID and the topic assigned by the model.
+  - *time_data.ipynb:* uses PySpark to read JSON data and extract the month and day of the week from the document publication dates. It then saves this information to a CSV file.
     
-- **Carpeta docker-configuration:**
-  - *docker-compose.yml.template:* Template del Docker Compose utilizado para generar el archivo de configuración.
-  - *docker_compose_configuration.py:* Script en Python que genera el Docker Compose deseado a partir del template, creando y asignando workers con las API keys correspondientes, junto a otras asignaciones automatizadas.
-  - *Dockerfile:* Archivo para construir la imagen de Docker necesaria para ejecutar *docker_compose_configuration.py*.
-  - *docker-compose.yml:* Docker Compose utilizado para montar la imagen anterior y crear el volumen donde se guardarán los datos.
-  - *.env:* Archivo para almacenar las variables de entorno como BEGIN_YEAR, END_YEAR y CALL_LIMIT, personalizables por usuario.
-  - *env_vars.txt:* Archivo de texto donde se encuentran las API keys (una en cada línea), asegurando un worker por cada key.
+- **docker-configuration:**
+  - *docker-compose.yml.template:* Docker Compose Template used to generate the configuration file.
+  - *docker_compose_configuration.py:* Python script that generates the desired Docker Compose from the template, creating and assigning workers with the corresponding API keys, along with other automated assignments.
+  - *Dockerfile:* File to build the Docker image needed to run *docker_compose_configuration.py*.
+  - *docker-compose.yml:* Docker Compose used to mount the above image and create the volume where the data will be stored.
+  - *.env:* File to store environment variables such as BEGIN_YEAR, END_YEAR and CALL_LIMIT, customizable by user.
+  - *env_vars.txt:* Text file containing the API keys (one on each line), ensuring a worker for each key. Said API keys can be obtained from the [CORE API webpage](https://core.ac.uk/services/api#what-is-included).
 
-- **Carpeta merger:**
-  - *Dockerfile:* Script que prepara un entorno para ejecutar una aplicación Python, asegurándose de que las dependencias y utilidades necesarias estén disponibles.
-  - *merge.py:* Este script en Python combina múltiples archivos JSON en un único archivo JSON de salida.
+- **merger:**
+  - *Dockerfile:* script that prepares an environment to run the Python application, ensuring that the necessary dependencies and utilities are available.
+  - *merge.py:* combines multiple JSON files into a single output JSON file.
 
-- **Carpeta spark:**
-  - *.env* Contiene la variable del entorno que determinará el numero de nodos de spark que tendrá el cluster montado
-  - *build.sh* El script prepara un entorno Dockerizado para ejecutar un clúster de Spark con soporte de JupyterLab.
-  - *cluster-base.Dockerfile* Este archivo Dockerfile crea una imagen de Docker basada en una versión ligera de Debian con Java Runtime Environment (JRE).
-  - *docker-compose.yml* Configura un entorno de clúster con servicios de JupyterLab, Spark Master y Spark Worker. Define un volumen compartido llamado shared-workspace para almacenar datos persistentes y compartir archivos entre los servicios.
-  - *jupyterlab.Dockerfile* El archivo prepara una imagen Docker para ejecutar JupyterLab en un entorno de clúster con soporte para Spark y otras bibliotecas necesarias.
-  - *spark-base.Dockerfile* El archivo prepara una imagen Docker para ejecutar Apache Spark en un entorno de clúster.
-  - *spark-defaults.conf* Estas configuraciones optimizan la gestión de eventos y registros en un entorno de Spark, mientras también establecen un límite en el número máximo de núcleos que pueden utilizarse.
-  - *spark-master.Dockerfile* Extiende una imagen base de Spark para configurar un entorno que incluye herramientas adicionales y personalizaciones.
-  - *spark-worker.Dockerfile* Extiende una imagen base de Spark para configurar un entorno de trabajador de Spark.
+- **spark:**
+  - *.env* environment variable that will determine the number of spark nodes that the cluster will have.
+  - *build.sh* prepares a Dockerized environment to run a Spark cluster with JupyterLab support.
+  - *cluster-base.Dockerfile* creates a Docker image based on a light version of Debian with Java Runtime Environment (JRE).
+  - *docker-compose.yml* Sets up a cluster environment with JupyterLab, Spark Master and Spark Worker services. Defines a shared volume called shared-workspace to store persistent data and share files between services.
 
-- **Carpeta worker:**
-  - *worker.py:* Script encargado de la extracción de datos desde la API.
-  - *requirements.txt:* Archivo que especifica las librerías necesarias para ejecutar el script.
-  - *Dockerfile:* Dockerfile que construye la imagen responsable de ejecutar *worker.py* e instala las librerías especificadas en requirements.txt.
+- **worker:**
+  - *worker.py:* script in charge of data extraction from the API.
+  - *requirements.txt:* specifies the libraries needed to run the script.
+  - *Dockerfile:* builds the image responsible for running *worker.py* and installs the libraries specified in requirements.txt.
 
-### Explicación de Componentes
+### Workflow steps
 
-- **Servicio de Extracción de Datos (Worker):** Este microservicio se encarga de la extracción de datos desde una API dada utilizando un conjunto de API keys. Su función principal es recolectar los datos necesarios de manera eficiente y confiable. 
-  - *Contribución al manejo eficiente de datos:* El uso de varios workers distribuye la carga de trabajo y acelera el proceso de extracción de datos al paralelizar las solicitudes a la API. Esto optimiza el rendimiento y garantiza una extracción rápida y efectiva de grandes volúmenes de datos.
-  - *Integración con otros componentes:* Los datos extraídos por cada worker se almacenan en un volumen Docker compartido, lo que permite un acceso uniforme a los datos desde otros componentes del sistema, como las bases de datos Elasticsearch, MySQL y Neo4j.
+- **1.1 Data extraction (Worker):** 
+  - *Contribution to efficient data handling:* The use of multiple workers distributes the workload and speeds up the data extraction process by parallelizing API requests. This optimizes performance and ensures fast and effective extraction of large volumes of data.
+  - *Integration with other components:* Data extracted by each worker is stored in a shared Docker volume, allowing uniform access to data from other components of the system, such as Elasticsearch, MySQL and Neo4j databases.
 
-- **Servicio de Coordinador:**  Este microservicio actúa como un orquestador, asegurando que los servicios se ejecuten en el orden adecuado y proporcionando una señal para habilitar la ejecución de servicios subsiguientes (wiki y crossref) una vez que los workers han completado su tarea.
-  - *Contribución al manejo eficiente de datos:* El servicio de coordinador garantiza un flujo eficiente de trabajo al asegurar que los diferentes servicios se ejecuten en el orden correcto, minimizando el tiempo de inactividad y maximizando la utilización de los recursos disponibles. Asimismo, permite una gestión eficiente de los datos al controlar la secuencia de ejecución de los servicios, lo que asegura que los datos se procesen y enriquezcan de manera oportuna y coherente.
-  - *Integración con otros componentes:* Se integra estrechamente con los workers encargados de la extracción de datos de las API de papers científicos, coordinando su ejecución y proporcionando una señal para habilitar la ejecución de servicios subsiguientes. Coordina la ejecución de los servicios adicionales que acceden a la wiki y a la API de Crossref, asegurando que se realicen después de que los workers hayan completado su tarea. Por último, interactúa con el volumen de Docker llamado "data" para acceder a los datos descargados y facilitar su posterior procesamiento y manipulación en los servicios subsiguientes de almacenamiento y tratamiento de datos.
+- **1.2 Coordinator:**  This microservice acts as an orchestrator, ensuring that services are executed in the proper order and providing a signal to enable the execution of subsequent services once the workers have completed their task.
 
-- **Almacenamiento de Datos en Volúmenes Docker:** Los datos extraídos por los workers se almacenan en volúmenes Docker para facilitar su acceso desde otros servicios y garantizar su persistencia a lo largo del tiempo.
-  - *Contribución al manejo eficiente de datos:* Almacenar los datos en volúmenes Docker permite un acceso rápido y eficiente a los mismos desde cualquier componente del sistema. Esto reduce la latencia y mejora el rendimiento en comparación con el almacenamiento en sistemas de archivos externos o bases de datos.
-  - *Integración con otros componentes:* Los volúmenes Docker proporcionan una capa de abstracción para los datos, lo que simplifica su integración con otros servicios, como las bases de datos Elasticsearch y Neo4j.
+- **1.3 Data Storage in Docker Volumes:** Data extracted by workers is stored in Docker volumes to facilitate its access from other services and guarantee its persistence over time.
+  - *Contribution to efficient data handling:* Storing data in Docker volumes allows fast and efficient access to data from any system component. This reduces latency and improves performance compared to storing on external file systems or databases.
+  - *Integration with other components:* Docker volumes provide an abstraction layer for data, simplifying integration with other services, such as Elasticsearch and Neo4j databases.
 
-- **Sistema de procesamiento distribuido(Spark):**
-  Para enriquecer la información recopilada de los papers científicos, se implementa un proceso utilizando Apache Spark. Los datos almacenados en los volúmenes Docker son accedidos por los nodos del clúster Spark, permitiendo un procesamiento distribuido y eficiente.
+- **2. Distributed processing system (Spark):**
+ To enrich the information collected from the scientific papers, a process using Apache Spark is implemented. The data stored in the Docker volumes are accessed by the Spark cluster nodes, allowing distributed and efficient processing.
 
-  - *Escalabilidad:* Spark puede escalar fácilmente desde una sola máquina hasta miles de nodos, lo que le permite procesar grandes cantidades de datos de forma eficiente. Esta escalabilidad es esencial para manejar el elevado volumen de datos de artículos científicos y la información complementaria procedente de múltiples API.
-  - *Tolerancia a fallos:* Los conjuntos de datos distribuidos resistentes (RDD) y las API DataFrame de Spark proporcionan tolerancia a fallos integrada. Si un nodo falla durante el procesamiento, Spark puede volver a calcular los datos perdidos utilizando la información de linaje, lo que garantiza la fiabilidad de las tareas de procesamiento.
-  - *Rendimiento:* Al distribuir las tareas entre varios nodos, Spark puede realizar el procesamiento en paralelo, lo que reduce significativamente el tiempo necesario para la transformación y el análisis de los datos. Esto es crucial para cumplir los requisitos de rendimiento de las aplicaciones de big data. 
+  - *Scalability:* Spark can easily scale from a single machine to thousands of nodes, allowing it to process large amounts of data efficiently. This scalability is essential for handling the high volume of scientific article data and complementary information from multiple APIs.
+  - *Fault tolerance:* Spark's resilient distributed datasets (RDD) and DataFrame APIs provide built-in fault tolerance. If a node fails during processing, Spark can recompute the lost data using lineage information, ensuring reliable processing tasks.
+  - *Performance:* By distributing tasks across multiple nodes, Spark can perform processing in parallel, which significantly reduces the time required for data transformation and analysis. This is crucial to meet the performance requirements of big data applications. 
 
-- **Servicios de Bases de Datos** Estos servicios almacenan y gestionan los datos de manera estructurada, lo que permite realizar consultas y análisis complejos sobre ellos.
-  
-  - **Neo4j** 
-    - La arquitectura gráfica nativa de Neo4j permite la representación directa de relaciones como ciudadanos de primera clase. Esto es ideal para nuestro proyecto, en el que las relaciones entre artículos, autores, editores y temas son fundamentales para el análisis.
-    - Esta estructura refleja intuitivamente las conexiones del mundo real que necesitamos analizar.
-    - A diferencia de las bases de datos relacionales, Neo4j puede gestionar eficientemente consultas que requieren múltiples uniones, lo que resulta beneficioso para explorar redes complejas de literatura científica.
-    - Las herramientas de visualización de gráficos integradas en Neo4j ayudan a explorar y comprender visualmente las relaciones en los datos, proporcionando una experiencia de análisis más intuitiva.
+- **3. Data storage:**
+  The extracted data is initially stored in a Docker volume named "data," then processed in a simulated distributed system using Spark, and finally stored in multiple databases.
 
-  - **SQL** 
-    -  Este modelo es muy eficaz para almacenar datos estructurados, como la información complementaria (por ejemplo, metadatos sobre documentos) obtenida de las API.
-    - SQL proporciona conformidad ACID (Atomicidad, Consistencia, Aislamiento, Durabilidad), asegurando un procesamiento de transacciones fiable y la consistencia de los datos.   
-    - Soporta la indexación de tablas, lo que mejora significativamente el rendimiento de las consultas de lectura. Esto es fundamental para la recuperación eficiente de datos, especialmente cuando se trata de grandes conjuntos de datos.
+## Ensuring Data Availability
 
-  - **Elastic Search**
-    - ElasticSearch soporta búsqueda de texto completo, permitiendo a los usuarios buscar a través de la totalidad del texto dentro de los documentos. Esto es particularmente útil para la consulta de documentos científicos donde los usuarios pueden buscar temas específicos, palabras clave, autores o frases.
-    - Proporciona potentes capacidades de agregación, permitiendo a los usuarios realizar análisis de datos complejos directamente dentro de sus consultas. Las agregaciones se pueden utilizar para calcular estadísticas, histogramas, etc., proporcionando información valiosa a partir de los datos.
-    - La indexación eficiente es el núcleo del rendimiento de ElasticSearch. Sus mecanismos de indexación están diseñados para manejar grandes conjuntos de datos y soportar búsquedas rápidas.
+Ensuring data availability is critical in big data infrastructures to maintain the reliability and accessibility of information. In our project, we use several strategies and technologies to ensure that data remains available even in the face of hardware failures or other disruptions. 
 
+ElasticSearch implements data replication by allowing each index to have one or more replica shards in addition to the primary shard, stored on different nodes in the cluster. If a node fails, a replica shard can be promoted to primary, ensuring data accessibility. Neo4j supports replication across clusters, where data is replicated to multiple instances, ensuring high availability and fault tolerance. 
 
-## Almacenamiento de Datos
+MySQL uses master-slave replication, where the master database handles write operations and propagates changes to slave databases; in case of failure, a slave can be promoted to master, maintaining availability.
 
-En esta sección, se propone una solución para el almacenamiento en crudo de los datos, optimizando el acceso y la recuperación de información.
+Distributing data and processing tasks across multiple nodes allows our infrastructure to tolerate failures without significant interruptions. Both Spark and ElasticSearch reroute tasks and data to healthy nodes in the event of failures, ensuring continuous operation. Regular backups of data stored in Neo4j, MySQL and ElasticSearch ensure that data can be restored in the event of catastrophic failures, using automated backup strategies to minimize data loss and downtime.
 
-#### Volumen Docker para Almacenamiento
+Load balancing in ElasticSearch distributes search and indexing requests across cluster nodes, avoiding bottlenecks and ensuring consistent performance. In MySQL, load balancers distribute queries to multiple instances, optimizing resource usage and maintaining high availability by preventing single-instance overload. These combined strategies ensure that our big data system is robust, resilient to failures, scalable and capable of handling large volumes of data with high availability and performance.
 
-Los datos extraídos se almacenarán en un volumen Docker denominado "data". Este enfoque garantiza un acceso centralizado y sencillo desde todos los servicios de bases de datos que se utilizarán, como Neo4j y Elasticsearch, así como desde herramientas de análisis como Jupyter, ElasticSearch y Spark.
+## Ensuring Data Scalability
 
-- **Centralización y Simplificación:** Al almacenar los datos en un volumen Docker, garantizamos un acceso centralizado desde todos los servicios de bases de datos que utilizaremos, así como desde herramientas de análisis. Esto simplifica la gestión y evita la duplicación de datos en diferentes ubicaciones.
+Horizontal scalability is achieved with Apache Spark, whose architecture allows more worker nodes to be added to the cluster, distributing the data load and complex processing tasks. ElasticSearch also scales horizontally by adding more nodes to the cluster, distributing search and indexing tasks, allowing it to handle increasing loads efficiently. Neo4j can scale horizontally by adding more nodes to distribute the workload of the graph database, handling larger datasets and more complex queries.
 
-- **Agilidad en la Manipulación:** Se elimina la necesidad de transferir los datos entre diferentes sistemas de archivos o dispositivos de almacenamiento, agilizando el proceso de manipulación y análisis.
+MySQL, while primarily scaling horizontally, also supports vertical scalability through the use of more powerful hardware, such as CPUs and memory, which helps handle larger datasets and more complex queries within a single instance. 
+ElasticSearch supports elastic scalability, allowing nodes to be dynamically added or removed based on current load and data volume, adjusting resource allocation in real time. Spark can also allocate resources dynamically, scaling up during processing peaks and scaling down during idle periods, thus optimizing resource usage and costs.
 
-- **Escalabilidad:** Los volúmenes Docker son altamente escalables y pueden crecer según las necesidades del proyecto. Esta flexibilidad nos permite adaptarnos a cambios en el volumen de datos sin comprometer el rendimiento del sistema.
+Cluster management is facilitated by tools such as Kubernetes, which can manage Spark and ElasticSearch clusters, automating the deployment, scaling and operation of containerized applications, ensuring efficient resource utilization. Continuous monitoring of resource usage and performance metrics allows the system to automatically scale resources according to predefined thresholds, ensuring optimal performance and availability.
 
-#### Formato de Almacenamiento
-
-Dado que se requerirá acceso programático a los datos a través de diferentes herramientas y servicios, proponemos almacenar los datos tanto en formato JSON como en formato CSV, dependiendo de su naturaleza y necesidades específicas.
-
-##### Justificación del Uso de JSON y CSV:
-
-- **JSON (JavaScript Object Notation):**
-    - **Estructura Flexible:** Adecuado para representar datos estructurados y semiestructurados, facilitando su manipulación y análisis posterior en herramientas como Jupyter y Spark.
-    - **Compatibilidad con Diversas Plataformas:** Ampliamente compatible y puede ser procesado por una variedad de herramientas y lenguajes de programación, garantizando una interoperabilidad sin problemas en diferentes entornos de desarrollo.
-
-    - **Legibilidad y Mantenibilidad:** Legible tanto para humanos como para máquinas, lo que simplifica la comprensión de la estructura y los atributos de los datos, facilitando el desarrollo y mantenimiento del sistema.
-
-- **CSV (Comma-Separated Values):**
-    - **Ideal para Datos Tabulares:** Simplifica la importación de datos en bases de datos relacionales y no relacionales, como Elasticsearch y Neo4j, permitiendo una integración más fácil con las diferentes bases de datos que se utilizarán en la segunda parte de la práctica.
-
-Esta solución proporciona una solución robusta y eficiente que optimiza el acceso, la manipulación y la recuperación de información, preparándonos para la siguiente fase de la práctica donde se realizará el tratamiento, manipulación y almacenamiento de los datos extraídos. El uso de un volumen Docker y la selección de formatos de almacenamiento adecuados aseguran un acceso programático sencillo y optimizado a los datos desde diversas herramientas y servicios.
-
-## Garantía de Disponibilidad de los Datos
-
-Asegurar la disponibilidad de datos es fundamental en las infraestructuras de big data para mantener la fiabilidad y accesibilidad de la información. En nuestro proyecto, utilizamos varias estrategias y tecnologías para garantizar que los datos permanezcan disponibles incluso ante fallos de hardware u otras interrupciones. 
-ElasticSearch implementa la replicación de datos permitiendo que cada índice tenga uno o más fragmentos de réplica además del fragmento primario, almacenados en diferentes nodos del clúster. Si un nodo falla, un fragmento de réplica puede ser promovido a primario, asegurando la accesibilidad de los datos. Neo4j soporta la replicación a través de clústeres, donde los datos se replican a múltiples instancias, garantizando alta disponibilidad y tolerancia a fallos. 
-MySQL utiliza la replicación maestro-esclavo, donde la base de datos maestra maneja las operaciones de escritura y propaga los cambios a las bases de datos esclavas; en caso de fallo, una esclava puede ser promovida a maestra, manteniendo la disponibilidad.
-
-Distribuir datos y tareas de procesamiento a través de múltiples nodos permite a nuestra infraestructura tolerar fallos sin interrupciones significativas. Tanto Spark como ElasticSearch redirigen tareas y datos a nodos saludables en caso de fallos, asegurando una operación continua. Las copias de seguridad regulares de los datos almacenados en Neo4j, MySQL y ElasticSearch aseguran que los datos pueden ser restaurados en caso de fallos catastróficos, utilizando estrategias de respaldo automatizadas para minimizar la pérdida de datos y el tiempo de inactividad.
-
-El balanceo de carga en ElasticSearch distribuye las solicitudes de búsqueda e indexación a través de los nodos del clúster, evitando cuellos de botella y asegurando un rendimiento consistente. En MySQL, los balanceadores de carga distribuyen las consultas a múltiples instancias, optimizando el uso de recursos y manteniendo alta disponibilidad al prevenir la sobrecarga en una sola instancia. Estas estrategias combinadas aseguran que nuestro sistema de big data es robusto, resistente a fallos, escalable y capaz de manejar grandes volúmenes de datos con alta disponibilidad y rendimiento.
-
-## Garantía de Escalabilidad de datos
-La escalabilidad horizontal se logra con Apache Spark, cuya arquitectura permite añadir más nodos de trabajo al clúster, distribuyendo la carga de datos y tareas de procesamiento complejas. ElasticSearch también escala horizontalmente al agregar más nodos al clúster, distribuyendo tareas de búsqueda e indexación, lo que permite manejar cargas crecientes de manera eficiente. Neo4j puede escalarse horizontalmente añadiendo más nodos para distribuir la carga de trabajo de la base de datos de grafos, gestionando datasets más grandes y consultas más complejas.
-
-MySQL, aunque principalmente escala horizontalmente, también soporta la escalabilidad vertical mediante el uso de hardware más potente, como CPUs y memoria, lo cual ayuda a manejar datasets más grandes y consultas más complejas dentro de una sola instancia. 
-ElasticSearch soporta la escalabilidad elástica, permitiendo añadir o remover nodos dinámicamente según la carga y el volumen de datos actual, ajustando la asignación de recursos en tiempo real. Spark también puede asignar recursos dinámicamente, escalando durante los picos de procesamiento y reduciendo durante los periodos de inactividad, optimizando así el uso de recursos y costos.
-
-La gestión de clústeres se facilita con herramientas como Kubernetes, que pueden manejar los clústeres de Spark y ElasticSearch, automatizando el despliegue, escalado y operación de aplicaciones en contenedores, asegurando una utilización eficiente de recursos. La monitorización continua del uso de recursos y métricas de rendimiento permite al sistema escalar automáticamente los recursos según umbrales predefinidos, garantizando un rendimiento y disponibilidad óptimos.
-
-# Eficiencia del Proyecto
-
-La eficiencia es un aspecto crítico de nuestro proyecto de infraestructura de big data, asegurando que las operaciones de procesamiento, almacenamiento y recuperación de datos estén optimizadas para ofrecer un alto rendimiento mientras se minimiza el consumo de recursos. La eficiencia de nuestro proyecto se logra mediante las siguientes estrategias y tecnologías:
-
-## Eficiencia en el Procesamiento de Datos
+## Efficiency in Data Processing
 
 ### Apache Spark:
 
-- **Procesamiento en Memoria:** La capacidad de Spark para realizar cálculos en memoria reduce significativamente el tiempo requerido para tareas de procesamiento iterativas, como las relacionadas con la extracción, transformación y análisis de datos. Esto conduce a una ejecución más rápida en comparación con los sistemas de procesamiento basados en disco.
-- **Procesamiento Paralelo:** Distribuyendo tareas en múltiples nodos de trabajo, Spark aprovecha el procesamiento paralelo, lo que mejora la velocidad y eficiencia de los flujos de trabajo de procesamiento de datos.
-- **Planes de Ejecución Optimizados:** El optimizador Catalyst de Spark genera planes de ejecución optimizados para consultas de datos, garantizando el uso eficiente de recursos computacionales y reduciendo el tiempo de procesamiento.
+- **In-Memory Processing:** Spark's ability to perform in-memory computations significantly reduces the time required for iterative processing tasks, such as those related to data extraction, transformation and analysis. This leads to faster execution compared to disk-based processing systems.
+- **Parallel Processing:** By distributing tasks across multiple job nodes, Spark leverages parallel processing, which improves the speed and efficiency of data processing workflows.
+- **Optimized Execution Plans:** Spark's Catalyst optimizer generates optimized execution plans for data queries, ensuring efficient use of computational resources and reducing processing time.
 
 ### ElasticSearch:
 
-- **Indexación Eficiente:** Los mecanismos eficientes de indexación de ElasticSearch, como los índices invertidos, aseguran que los datos se almacenen de manera que permita una búsqueda y recuperación rápidas, minimizando el tiempo y los recursos computacionales necesarios para realizar consultas de búsqueda.
-- **Compresión:** ElasticSearch emplea técnicas de compresión para reducir la huella de almacenamiento de los datos indexados, asegurando un uso eficiente del espacio en disco manteniendo tiempos de acceso rápidos.
+- **Efficient Indexing:** ElasticSearch's efficient indexing mechanisms, such as inverted indexes, ensure that data is stored in a manner that enables fast search and retrieval, minimizing the time and computational resources required to perform search queries.
+- **Compression:** ElasticSearch employs compression techniques to reduce the storage footprint of indexed data, ensuring efficient use of disk space while maintaining fast access times.
 
 ### Neo4j:
 
-- **Representación Compacta de Grafos:** El motor de almacenamiento de grafos nativo de Neo4j está diseñado para almacenar relaciones como entidades de primer nivel, permitiendo un almacenamiento compacto y eficiente de relaciones de datos complejas.
-- **Travesía Eficiente:** Los algoritmos de travesía de Neo4j están optimizados para estructuras de grafos, permitiendo una exploración rápida de datos conectados, lo que es fundamental para analizar las relaciones entre documentos científicos, editores y temas.
+- **Compact Graph Representation:** Neo4j's native graph storage engine is designed to store relationships as top-level entities, enabling compact and efficient storage of complex data relationships.
+- **Efficient Traversal:** Neo4j's traversal algorithms are optimized for graph structures, enabling fast exploration of connected data, which is critical for analyzing relationships between scientific papers, publishers, and topics.
 
 ### MySQL:
 
-- **Almacenamiento de Datos Normalizado:** Al utilizar esquemas normalizados, MySQL minimiza la redundancia de datos, lo que conduce a un uso eficiente del espacio de almacenamiento y mantiene la integridad de los datos.
-- **Indexación:** MySQL soporta diversas estrategias de indexación, como árboles B y hash, que mejoran la velocidad de las operaciones de recuperación de datos.
+- **Normalized Data Storage:** By using normalized schemas, MySQL minimizes data redundancy, leading to efficient use of storage space and maintaining data integrity.
+- **Indexing:** MySQL supports various indexing strategies, such as B-trees and hashing, which improve the speed of data retrieval operations.
 
-### Eficiencia en la Recuperación de Datos
+## Data Retrieval Efficiency
 
 #### ElasticSearch:
 
-- **Capacidades de Búsqueda de Texto Completo:** Las potentes capacidades de búsqueda de texto completo de ElasticSearch permiten la recuperación rápida y precisa de documentos basada en consultas de texto.
-- **Puntuación de Relevancia y Optimización de Consultas:** Las características de puntuación de relevancia y optimización de consultas de ElasticSearch garantizan que se devuelvan rápidamente los resultados de búsqueda más relevantes, mejorando la experiencia del usuario y reduciendo la carga computacional en el sistema.
+- **Full-Text Search Capabilities:** ElasticSearch's powerful full-text search capabilities enable fast and accurate retrieval of documents based on text queries.
+- **Relevance Scoring and Query Optimization:** ElasticSearch's relevance scoring and query optimization features ensure that the most relevant search results are returned quickly, improving the user experience and reducing the computational load on the system.
 
 #### Neo4j:
 
-- **Lenguaje de Consulta Cypher:** El lenguaje de consulta Cypher de Neo4j está diseñado específicamente para bases de datos de grafos, permitiendo la consulta eficiente y expresiva de datos de grafos.
-- **Algoritmos de Grafos:** Los algoritmos de grafos integrados de Neo4j están optimizados para el rendimiento, lo que permite el análisis eficiente de grandes conjuntos de datos de grafos.
+- **Cypher Query Language:** Neo4j's Cypher query language is designed specifically for graph databases, enabling efficient and expressive querying of graph data.
+- **Graph Algorithms:** Neo4j's built-in graph algorithms are optimized for performance, enabling efficient analysis of large graph data sets.
 
-### Balanceo de Carga:
+### Load Balancing:
 
-- **ElasticSearch:** El balanceo de carga entre nodos garantiza que ningún nodo se convierta en un cuello de botella, distribuyendo uniformemente la carga de búsqueda e indexación.
+- **ElasticSearch:** Load balancing between nodes ensures that no node becomes a bottleneck, evenly distributing the search and indexing load.
 
-- **Uso de Múltiples Workers:** La implementación de múltiples workers distribuye la carga de trabajo de extracción de datos, permitiendo un procesamiento más eficiente y rápido. Esto garantiza un uso más efectivo de los recursos disponibles y reduce el tiempo total de extracción de datos.
+- **Use of Multiple Workers:** The implementation of multiple workers distributes the data extraction workload, allowing for more efficient and faster processing. This ensures more effective use of available resources and reduces overall data extraction time.
 
-- **Utilización de Contenedores Docker:** La elección de usar contenedores Docker proporciona un entorno ligero y eficiente para ejecutar aplicaciones. Al compartir el mismo kernel del sistema operativo del host, los contenedores minimizan el sobrecosto y permiten una mayor portabilidad de las aplicaciones entre diferentes entornos.
+- The choice to use Docker containers provides a lightweight and efficient environment for running applications. By sharing the same kernel as the host operating system, containers minimize overhead and allow for greater portability of applications between different environments.
 
-- **Almacenamiento de Datos en Volúmenes Docker:** Al optar por almacenar los datos en volúmenes Docker, se optimiza el acceso a los datos y se reduce la latencia. Esto mejora la eficiencia de las operaciones de lectura y escritura en comparación con el acceso a través de una red.
+- **Data Storage in Docker Volumes:** By choosing to store data in Docker volumes, data access is optimized and latency is reduced. This improves the efficiency of read and write operations compared to access over a network.
 
+## Project Scope
 
-## Fiabilidad del Proyecto
+The scope of the project encompasses several stages and technologies, designed to create a robust and scalable infrastructure for scientific data mining, processing, analysis and storage. The key components and capabilities of the project are described below:
 
-La fiabilidad del proyecto es un aspecto crucial, dado que involucra la extracción, procesamiento y almacenamiento de grandes volúmenes de datos científicos. A continuación, se detalla cómo se asegura la fiabilidad en cada una de las etapas del proyecto:
+### Initial Data Extraction
 
-### Extracción de Datos con Docker Workers
+- **Implementation of Docker Workers**: Configuration and deployment of four Docker containers, each running Python scripts to extract data in JSON format from a scientific article API.
+- **Process Parallelization**: Use of multiple API keys to distribute and parallelize the extraction process, optimizing data collection time and efficiency.
 
-- **Aislamiento y Consistencia**: El uso de contenedores Docker asegura que cada worker opere en un entorno aislado y consistente, minimizando la posibilidad de conflictos y garantizando que el código se ejecute de manera idéntica en cualquier entorno.
+### Data Merging and Consolidation
 
-- **Paralelización y Redundancia**: Al utilizar múltiples workers con diferentes claves API, se distribuye la carga de trabajo, lo que no solo mejora la eficiencia sino que también añade redundancia. Si un worker falla, los otros pueden continuar con el proceso de extracción.
+- Merging of the JSON files generated by the different workers into a single JSON file, ensuring a complete and accurate consolidation of the information collected.
 
-- **Manejo de Errores**: Los scripts de Python en cada worker incluyen mecanismos de manejo de errores y reintentos para asegurar que la extracción de datos sea lo más completa y precisa posible.
+### Data Processing with Apache Spark
 
-### Procesamiento de Datos con Apache Spark
+- **Spark Cluster Deployment**: Setting up a Spark cluster with a master and six worker nodes to handle distributed data processing.
+- **Data Enrichment**: Extracting additional information from other API sources, including details about the location, publisher, and main topic of each article.
+- **CSV File Generation**: Transformation and storage of enriched data in CSV files, facilitating their later use in databases and other applications.
 
-- **Resiliencia y Tolerancia a Fallos**: Spark está diseñado para ser resiliente y tolerante a fallos. Si un nodo del clúster falla durante el procesamiento, Spark redistribuirá automáticamente las tareas a otros nodos disponibles.
+### Data Storage and Management
 
-- **Optimización de Tareas**: Spark optimiza las tareas de procesamiento para maximizar la eficiencia y minimizar los tiempos de ejecución, lo que contribuye a la fiabilidad de los resultados obtenidos.
+- **Neo4j Database**: Implementation of a Neo4j graph database for modeling and querying complex relationships between entities such as authors, articles and publishers.
+- **MySQL Database**: Structured data storage in a MySQL relational database, allowing efficient queries and management of large volumes of information.
+- **Elasticsearch**: Storage of JSON files in Elasticsearch, providing advanced full-text search and analysis capabilities.
 
-### Almacenamiento de Datos en Bases de Datos
+### Data Visualization and Analysis
 
-- **Bases de Datos Robustas**: Neo4j y MySQL son bases de datos maduras y bien establecidas que ofrecen mecanismos de recuperación ante fallos y copias de seguridad automáticas, garantizando la persistencia y disponibilidad de los datos.
-- **Índices y Consultas Eficientes**: La indexación adecuada en Elasticsearch y MySQL asegura que las consultas sean rápidas y precisas, mejorando la accesibilidad y usabilidad de los datos.
+- **Integration with JupyterLab**: Use of JupyterLab to provide an interactive data analysis environment, allowing researchers to explore and visualize data efficiently.
+- **Interactive Analysis**: Capabilities to perform interactive data analysis, including ad hoc queries, report generation, and visualization of graphs and relationships.
 
-## Alcance del Proyecto
+### Scalability and Scalability
 
-El alcance del proyecto abarca varias etapas y tecnologías, diseñadas para crear una infraestructura robusta y escalable para la extracción, procesamiento, análisis y almacenamiento de datos científicos. A continuación, se describen los componentes clave y las capacidades del proyecto:
+- **Horizontal Scalability**: Ability to add more Docker workers and Spark nodes to handle larger data volumes or increase processing speed as needed.
+- **Modularity**: Modular design that allows integration of new data sources and expansion of functionality without affecting the core system.
 
-### Extracción de Datos Inicial
+## Installation
 
-- **Implementación de Docker Workers**: Configuración y despliegue de cuatro contenedores Docker, cada uno ejecutando scripts de Python para extraer datos en formato JSON desde una API de artículos científicos.
-- **Paralelización del Proceso**: Uso de múltiples claves API para distribuir y paralelizar el proceso de extracción, optimizando el tiempo y la eficiencia de recolección de datos.
-
-### Fusión y Consolidación de Datos
-
-- **Unificación de Datos**: Fusión de los archivos JSON generados por los diferentes workers en un único archivo JSON, asegurando una consolidación completa y precisa de la información recolectada.
-
-### Procesamiento de Datos con Apache Spark
-
-- **Despliegue del Clúster de Spark**: Configuración de un clúster de Spark con un maestro y seis nodos de trabajo para manejar el procesamiento distribuido de datos.
-- **Enriquecimiento de Datos**: Extracción de información adicional desde otras fuentes API, incluyendo detalles sobre la ubicación, el editor y el tema principal de cada artículo.
-- **Generación de Archivos CSV**: Transformación y almacenamiento de los datos enriquecidos en archivos CSV, facilitando su uso posterior en bases de datos y otras aplicaciones.
-
-### Almacenamiento y Gestión de Datos
-
-- **Base de Datos Neo4j**: Implementación de una base de datos de grafos Neo4j para modelar y consultar relaciones complejas entre entidades como autores, artículos y editores.
-- **Base de Datos MySQL**: Almacenamiento estructurado de datos en una base de datos relacional MySQL, permitiendo consultas eficientes y gestión de grandes volúmenes de información.
-- **Elasticsearch**: Almacenamiento de los archivos JSON en Elasticsearch, proporcionando capacidades avanzadas de búsqueda y análisis de texto completo.
-
-### Visualización y Análisis de Datos
-
-- **Integración con JupyterLab**: Utilización de JupyterLab para proporcionar un entorno interactivo de análisis de datos, permitiendo a los investigadores explorar y visualizar los datos de manera eficiente.
-- **Análisis Interactivo**: Capacidades para realizar análisis interactivo de datos, incluyendo consultas ad hoc, generación de informes y visualización de gráficos y relaciones.
-
-### Ampliación y Escalabilidad
-
-- **Escalabilidad Horizontal**: Capacidad de añadir más Docker workers y nodos Spark para manejar mayores volúmenes de datos o incrementar la velocidad de procesamiento según sea necesario.
-- **Modularidad**: Diseño modular que permite la integración de nuevas fuentes de datos y la ampliación de funcionalidades sin afectar el núcleo del sistema.
-
-#### Objetivos Específicos
-
-- **Recolección de Datos Científicos**: Obtener datos detallados y actualizados de artículos científicos desde diversas fuentes API.
-- **Enriquecimiento de Información**: Añadir metadatos relevantes a los artículos científicos, mejorando la calidad y utilidad del dataset.
-- **Almacenamiento Eficiente**: Utilizar bases de datos especializadas para almacenar y gestionar los datos de manera óptima.
-- **Facilitación del Análisis**: Proveer herramientas y entornos que faciliten el análisis avanzado de los datos por parte de investigadores y científicos de datos.
-
-## Instalación
-
-Clona el repositorio usando Git. Abre tu terminal o símbolo del sistema y ejecuta el siguiente comando:
+Clone the repository using Git. Open your terminal or command prompt and run the following command:
 
 ```bash
 git clone https://github.com/bnvulpe/PapersLab.git --config core.autocrlf=false
 ```
-## Uso
+## Use
 
-Después de descargar o clonar el repositorio, navega hasta el directorio del proyecto en tu terminal o símbolo del sistema.
+After cloning the repository, navigate to the project directory in your terminal or command prompt.
 
-Una vez ubicado en la carpeta docker-configuration:
+Once located in the docker-configuration folder:
 ```bash
 cd docker-configuration
 ```
 
-Para GIT BASH:
+In GIT BASH:
 ```bash
 
 1. export PWD_PARENT=$(dirname "$(pwd)")
@@ -306,8 +230,7 @@ Para GIT BASH:
 
 7. docker-compose stop
 ```
-
-Una vez verificamos que el archivo all_data.json en dfs folder
+Once we have verified that the file all_data.json in dfs folder and stopped the container.
 
 ```bash
 
@@ -317,7 +240,7 @@ Una vez verificamos que el archivo all_data.json en dfs folder
 
 3. docker-compose --env-file .env up --build --detach
 
-4. una vez sacados todos los datos (avisa en logs el jupyter): 
+4. once all the data has been extracted (jupyter reports in logs): 
 
 docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{print $1}')
 
@@ -325,14 +248,14 @@ docker stop $(docker ps -a --format "{{.ID}} {{.Names}}" | grep "spark" | awk '{
 
 6. docker compose up -d
 
-Una vez jupyter ha importado los datos a Elasticsearch (avisa en logs el jupyter), en la dirección localhost:8889 ya encontraremos Elasticsearch para hacer las queries necesarias para el procesamiento y analisis de los datos a conveniencia. Para trabajar con Neo4j se deberá acceder a localhost:7687, iniciar sesión con neo4j/password y realizar los imports del archivo /databases/init.txt
+Once jupyter has imported the data to Elasticsearch (jupyter reports it in logs), in the address localhost:8889 we will find Elasticsearch to make the necessary queries for the processing and analysis of the data at convenience. To work with Neo4j you must access localhost:7687, login with neo4j/password and make the imports of the file /databases/init.txt.
 
 ```
-Para desmontar todo en raiz ejecutar
+To disassemble everything in root run
 
 ```
 ./teardown.sh
 ```
 ## License
 
-Este proyecto está licenciado bajo la Licencia MIT - consulta el archivo [LICENSE](LICENSE) para más detalles.
+This project is licensed under the MIT License - see file [LICENSE](LICENSE) for more details.
